@@ -7,7 +7,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
+
+	"github.com/mesmerai/news-aggregator/news"
 )
+
+// visible to all main
+//var newsapi *news.Client
 
 // Loading HTML Template from file. Will will panic if error is not-nil.
 var tmpl = template.Must(template.ParseFiles("./index.html"))
@@ -19,7 +25,7 @@ var tmpl = template.Must(template.ParseFiles("./index.html"))
 to the connection as part of an HTTP response.
 - the r parameter represents the HTTP request received from the client.
 */
-func IndexHandler(w http.ResponseWriter, r *http.Request) {
+func indexHandler(w http.ResponseWriter, r *http.Request) {
 	//show the HTML template
 	tmpl.Execute(w, nil)
 	//w.Write([]byte("<h1>Hello World!</h1>\n"))
@@ -27,30 +33,42 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 }
 
-func SearchHandler(w http.ResponseWriter, r *http.Request) {
-	// Package url parses URLs and implements query escaping ==> http://localhost:8080/search?q=ciccio
-	u, err := url.Parse(r.URL.String())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+/*
+	Receive a Pointer to news.Client and return an anonymous function that
+	satisfies the HandlerFunc
+*/
+func searchHandler(newsapi *news.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Package url parses URLs and implements query escaping ==> http://localhost:8080/search?q=ciccio
+		u, err := url.Parse(r.URL.String())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		params := u.Query()
+		searchQuery := params.Get("q")
+		page := params.Get("page")
+		if page == "" {
+			page = "1"
+		}
+
+		// log the request
+		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+
+		fmt.Println("Search Query: ", searchQuery)
+		fmt.Println("Page: ", page)
+
+		newsapi.FetchNews(searchQuery, page)
+
 	}
-
-	params := u.Query()
-	searchQuery := params.Get("q")
-	page := params.Get("page")
-	if page == "" {
-		page = "1"
-	}
-
-	// log the request
-	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
-
-	fmt.Println("Search Query: ", searchQuery)
-	fmt.Println("Page: ", page)
-
 }
 
 func main() {
+
+	news_api_key := getApiKeyFromEnv()
+	myClient := &http.Client{Timeout: 10 * time.Second}
+	newsapi := news.NewClient(myClient, news_api_key, 20)
 
 	// to handle static files (like our assets/style.css) we need to:
 	// - instantiate a FileServer object with the folder of the static files
@@ -61,7 +79,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	// add Handles, basically matches Requests and call the respective Handle
-	mux.HandleFunc("/", IndexHandler)
+	mux.HandleFunc("/", indexHandler)
 	// static files Handle
 	// use Handle because the http.FileServer() method returns an http.Handler type instead of an HandlerFunc
 	// we Strip the prefix to cut the '/assets/' part and forward the modified request to the handler
@@ -70,7 +88,8 @@ func main() {
 	mux.Handle("/assets/", http.StripPrefix("/assets/", fs))
 
 	// handler for /search
-	mux.HandleFunc("/search", SearchHandler)
+	// ** Closure over newsapi parameter
+	mux.HandleFunc("/search", searchHandler(newsapi))
 
 	// ListenAndServe starts an HTTP server with a given address and handler.
 	// -- http://localhost:8080

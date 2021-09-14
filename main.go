@@ -65,7 +65,6 @@ func searchHandler(newsapi *news.Client) http.HandlerFunc {
 }
 
 func main() {
-
 	news_api_key := getApiKeyFromEnv()
 	myClient := &http.Client{Timeout: 10 * time.Second}
 	newsapi := news.NewClient(myClient, news_api_key, 20)
@@ -94,9 +93,7 @@ func main() {
 	// ListenAndServe starts an HTTP server with a given address and handler.
 	// -- http://localhost:8080
 	http.ListenAndServe(":8080", mux)
-
 }
-
 func getApiKeyFromEnv() string {
 	news_api_key := os.Getenv("NEWS_API_KEY")
 	if news_api_key == "" {

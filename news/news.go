@@ -18,13 +18,12 @@ func NewClient(httpClient *http.Client, key string, pageSize int) *Client {
 	if pageSize > 100 {
 		pageSize = 100
 	}
-	return &Client{httpClient, key, pageSize}
 
+	return &Client{httpClient, key, pageSize}
 }
 
 func (c *Client) FetchNews(query, page string) {
 	endpoint := fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&pageSize=%d&page=%s&apiKey=%s&sortBy=publishedAt&language=en", url.QueryEscape(query), c.pageSize, page, c.key)
-	//req, err := c.http.NewRequest("GET", restEndpoint, nil)
 	resp, err := c.http.Get(endpoint)
 
 	// Handle error from the response

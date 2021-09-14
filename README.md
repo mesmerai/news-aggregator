@@ -25,7 +25,7 @@ $ go mod tidy
 
 ## Data returned from NEWS API request
 
-Each article is an object withing the ```articles``` array. 
+Each article is an object within the ```articles``` array. 
 
 ```
 {
@@ -52,7 +52,7 @@ Each article is an object withing the ```articles``` array.
       },
 ```
 
-Useful tool to generate the Go struct from the JSON returned from the request is [JSON-to-GO](https://mholt.github.io/json-to-go/).   
+Useful tool to generate the Go struct from the JSON returned by the request: [JSON-to-GO](https://mholt.github.io/json-to-go/).   
 Our ```struct```:      
 
 ```

@@ -34,12 +34,13 @@ type Results struct {
 /* Client is our struct for the News Client
 - http is a pointer to the httpClient itself that makes the web requests
 - key is the API key
-- pageSize is the number of results to return per page (max 100)
+- PageSize is the number of results to return per page (max 100)
 */
+// IMPORTANT: only PageSize is Exported to other packages as it's CAPITAL Letter
 type Client struct {
 	http     *http.Client
 	key      string
-	pageSize int
+	PageSize int
 }
 
 // NewClient function creates our Client used for requests
@@ -54,7 +55,7 @@ func NewClient(httpClient *http.Client, key string, pageSize int) *Client {
 // FetchNews func with 2 parameters (query and page) and return the Result struct
 //Notice that the search query is URL encoded through the QueryEscape() method.
 func (c *Client) FetchNews(query, page string) (*Results, error) {
-	endpoint := fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&pageSize=%d&page=%s&apiKey=%s&sortBy=publishedAt&language=en", url.QueryEscape(query), c.pageSize, page, c.key)
+	endpoint := fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&pageSize=%d&page=%s&apiKey=%s&sortBy=publishedAt&language=en", url.QueryEscape(query), c.PageSize, page, c.key)
 	resp, err := c.http.Get(endpoint)
 
 	// Handle error from the response

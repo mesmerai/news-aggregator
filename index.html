@@ -15,7 +15,7 @@
         <input
           autofocus
           class="search-input"
-          value=""
+          value="{{ .Query }}"
           placeholder="Search"
           type="search"
           name="q"
@@ -23,6 +23,25 @@
         <a href="https://github.com/mesmerai/news-aggregator" class="button github-button">View on GitHub</a>
       </form>
     </header>
+    <section class="container">
+      <ul class="search-results">
+        {{ range.Results.Articles }}
+        <li class="news-article">
+          <div>
+            <a target="_blank" rel="noreferrer noopener" href="{{.URL}}">
+              <h3 class="title">{{.Title }}</h3>
+            </a>
+            <p class="description">{{ .Description }}</p>
+            <div class="metadata">
+              <p class="source">{{ .Source.Name }}</p>
+              <time class="published-date">{{ .PublishedAt }}</time>
+            </div>
+          </div>
+          <img class="article-image" src="{{ .URLToImage }}" />
+        </li>
+        {{ end }}
+      </ul>
+    </section>
   </main>
 </body>
 </html>

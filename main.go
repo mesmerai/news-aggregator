@@ -28,6 +28,25 @@ type Search struct {
 	Results    *news.Results
 }
 
+// determine if it's LastPage to set the 'Next' button
+func (s *Search) IsLastPage() bool {
+	return s.NextPage >= s.TotalPages
+}
+
+// get CurrentPage to set the 'Previous' button
+// CurrentPage is always NextPage - 1, except when we have only one page
+func (s *Search) CurrentPage() int {
+	if s.NextPage == 1 {
+		return s.NextPage
+	}
+	return s.NextPage - 1
+}
+
+// PreviousPage
+func (s *Search) PreviousPage() int {
+	return s.CurrentPage() - 1
+}
+
 /* * Handler function *
 - define the IndexHandler function having signature => func(w http.ResponseWriter, r *http.Request)
 - The w parameter is the structure we use to send responses to an HTTP request.
@@ -135,6 +154,14 @@ func searchHandler(newsapi *news.Client) http.HandlerFunc {
 			NextPage:   nextPage,
 			TotalPages: int(math.Ceil(float64(results.TotalResults) / float64(newsapi.PageSize))), //rounding the result up to the nearest integer, used later for pagination
 			Results:    results,
+		}
+
+		// this block is to increment NextPage
+		// here we define 'ok' var in scope within the if block only,
+		// 1. set to what is never returned by the func IsLastPage
+		// 2. check if ok == true
+		if ok := !search.IsLastPage(); ok {
+			search.NextPage++
 		}
 
 		// Intermediatie empty byte buffer where the Template is execute first to check errors

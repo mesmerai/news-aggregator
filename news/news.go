@@ -52,6 +52,15 @@ func NewClient(httpClient *http.Client, key string, pageSize int) *Client {
 	return &Client{httpClient, key, pageSize}
 }
 
+// format the 'PublishedAt' date
+func (a *Article) FormatPublishedDate() string {
+	// func (t Time) Date() (year int, month Month, day int)
+	year, month, day := a.PublishedAt.Date()
+	// %v	the value in a default format
+	return fmt.Sprintf("%v %d, %d", month, day, year)
+
+}
+
 // FetchNews func with 2 parameters (query and page) and return the Result struct
 //Notice that the search query is URL encoded through the QueryEscape() method.
 func (c *Client) FetchNews(query, page string) (*Results, error) {

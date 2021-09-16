@@ -28,13 +28,6 @@ type Search struct {
 	Results    *news.Results
 }
 
-type SearchByCountry struct {
-	Query2     string
-	NextPage   int
-	TotalPages int
-	Results    *news.Results
-}
-
 // determine if it's LastPage to set the 'Next' button
 func (s *Search) IsLastPage() bool {
 	return s.NextPage >= s.TotalPages
@@ -43,25 +36,6 @@ func (s *Search) IsLastPage() bool {
 // get CurrentPage to set the 'Previous' button
 // CurrentPage is always NextPage - 1, except when we have only one page
 func (s *Search) CurrentPage() int {
-	if s.NextPage == 1 {
-		return s.NextPage
-	}
-	return s.NextPage - 1
-}
-
-// PreviousPage
-func (s *SearchByCountry) PreviousPage() int {
-	return s.CurrentPage() - 1
-}
-
-// determine if it's LastPage to set the 'Next' button
-func (s *SearchByCountry) IsLastPage() bool {
-	return s.NextPage >= s.TotalPages
-}
-
-// get CurrentPage to set the 'Previous' button
-// CurrentPage is always NextPage - 1, except when we have only one page
-func (s *SearchByCountry) CurrentPage() int {
 	if s.NextPage == 1 {
 		return s.NextPage
 	}
@@ -133,8 +107,14 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	- it makes testing much easier
 	- limits the function's scope
 */
-func searchHandler(newsapi *news.Client) http.HandlerFunc {
+func searchHandler(newsapi *news.Client, searchType string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		// some vars declared
+		var err error
+		country := ""
+		results := &news.Results{}
+
 		// log the request
 		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 
@@ -152,10 +132,21 @@ func searchHandler(newsapi *news.Client) http.HandlerFunc {
 			page = "1"
 		}
 
+		// country available only when searching by country
+		if searchType == "searchByCountry" {
+			country = params.Get("country")
+		}
+
 		//fmt.Println("Search Query: ", searchQuery)
 		//fmt.Println("Page: ", page)
 
-		results, err := newsapi.FetchNews(searchQuery, page)
+		if searchType == "searchGlobal" {
+			results, err = newsapi.FetchNews(searchQuery, page)
+		}
+		if searchType == "searchByCountry" {
+			results, err = newsapi.FetchNewsByCountry(searchQuery, page, country)
+		}
+
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -208,6 +199,7 @@ func searchHandler(newsapi *news.Client) http.HandlerFunc {
 	}
 }
 
+/*
 func searchByCountryHandler(newsapi *news.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// log the request
@@ -240,20 +232,20 @@ func searchByCountryHandler(newsapi *news.Client) http.HandlerFunc {
 			return
 		}
 
-		searchByCountry := &SearchByCountry{
-			Query2:     searchQuery,
+		search := &Search{
+			Query:      searchQuery,
 			NextPage:   nextPage,
 			TotalPages: int(math.Ceil(float64(results.TotalResults) / float64(newsapi.PageSize))), //rounding the result up to the nearest integer, used later for pagination
 			Results:    results,
 		}
 
-		if !searchByCountry.IsLastPage() {
-			searchByCountry.NextPage++
+		if !search.IsLastPage() {
+			search.NextPage++
 		}
 
 		buffer := &bytes.Buffer{}
 
-		err = tmpl.Execute(buffer, searchByCountry)
+		err = tmpl.Execute(buffer, search)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -263,6 +255,7 @@ func searchByCountryHandler(newsapi *news.Client) http.HandlerFunc {
 	}
 
 }
+*/
 
 func getApiKeyFromEnv() string {
 	news_api_key := os.Getenv("NEWS_API_KEY")
@@ -297,10 +290,11 @@ func main() {
 
 	// handler for /search
 	// ** Closure over newsapi parameter
-	mux.HandleFunc("/search", searchHandler(newsapi))
+	mux.HandleFunc("/search", searchHandler(newsapi, "searchGlobal"))
+	mux.HandleFunc("/searchByCountry", searchHandler(newsapi, "searchByCountry"))
 
 	// searchNews by Country
-	mux.HandleFunc("/searchByCountry", searchByCountryHandler(newsapi))
+	//mux.HandleFunc("/searchByCountry", searchByCountryHandler(newsapi))
 
 	// ListenAndServe starts an HTTP server with a given address and handler.
 	// -- http://localhost:8080

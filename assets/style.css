@@ -9,14 +9,23 @@ html {
 }
 
 :root {
-  --light-green: #00ff00;
-  --dark-green: #003b00;
-  --dark-grey: #777;
-  --light-grey: #dadce0;
+  --light-blue: #86caf1;
+  --dark-blue: #0068a5;
+  --dark-grey: rgb(82, 81, 81);
+  --light-grey: #c7c7c7;
+}
+
+::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+  color: lightblue;
+  opacity: 1; /* Firefox */
 }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+}
+
+p {
+  padding: 10px 10px 10px 0px;
 }
 
 a {
@@ -30,7 +39,7 @@ a:hover {
 
 a.button {
   border: 2px solid #004400;
-  color: var(--dark-green);
+  color: var(--dark-blue);
   border-radius: 4px;
   padding: 6px 24px;
   font-size: 14px;
@@ -39,22 +48,20 @@ a.button {
 
 a.button:hover {
   text-decoration: none;
-  background-color: var(--dark-green);
-  color: var(--light-green);
+  background-color: var(--dark-blue);
+  color: var(--light-blue);
 }
 
 header {
   width: 100%;
-  height: 50px;
+  /*height: 100px;*/
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
   display: flex;
   justify-content: space-between;
-  background-color: var(--light-green);
-  padding: 5px 10px;
+  background-color: var(--light-blue);
+  padding: 10px;
   align-items: center;
+  font-size: 16px;
 }
 
 .logo {
@@ -66,22 +73,32 @@ form {
 }
 
 .search-input {
-  width: 500px;
-  height: 100%;
+  width: 300px;
+  height: 37%;
   border-radius: 4px;
   border-color: transparent;
-  background-color: var(--dark-green);
-  color: var(--light-green);
+  background-color: var(--dark-blue);
+  color: white;
   font-size: 16px;
   line-height: 1.4;
   padding-left: 5px;
+}
+
+.search-button {
+  border: 2px solid #004400;
+  color: var(--dark-blue);
+  border-radius: 4px;
+  padding: 6px 24px;
+  font-size: 14px;
+  font-weight: 400;
 }
 
 .container {
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
-  padding: 80px 20px 40px;
+  padding: 100px 0px 30px 0px
+  /*padding: 80px 20px 40px;*/
 }
 
 .result-count {
@@ -122,7 +139,7 @@ form {
 
 .metadata {
   display: flex;
-  color: var(--dark-green);
+  color: var(--dark-blue);
   font-size: 14px;
 }
 

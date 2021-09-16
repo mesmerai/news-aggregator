@@ -28,6 +28,13 @@ type Search struct {
 	Results    *news.Results
 }
 
+type SearchByCountry struct {
+	Query2     string
+	NextPage   int
+	TotalPages int
+	Results    *news.Results
+}
+
 // determine if it's LastPage to set the 'Next' button
 func (s *Search) IsLastPage() bool {
 	return s.NextPage >= s.TotalPages
@@ -36,6 +43,25 @@ func (s *Search) IsLastPage() bool {
 // get CurrentPage to set the 'Previous' button
 // CurrentPage is always NextPage - 1, except when we have only one page
 func (s *Search) CurrentPage() int {
+	if s.NextPage == 1 {
+		return s.NextPage
+	}
+	return s.NextPage - 1
+}
+
+// PreviousPage
+func (s *SearchByCountry) PreviousPage() int {
+	return s.CurrentPage() - 1
+}
+
+// determine if it's LastPage to set the 'Next' button
+func (s *SearchByCountry) IsLastPage() bool {
+	return s.NextPage >= s.TotalPages
+}
+
+// get CurrentPage to set the 'Previous' button
+// CurrentPage is always NextPage - 1, except when we have only one page
+func (s *SearchByCountry) CurrentPage() int {
 	if s.NextPage == 1 {
 		return s.NextPage
 	}
@@ -107,9 +133,11 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	- it makes testing much easier
 	- limits the function's scope
 */
-
 func searchHandler(newsapi *news.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// log the request
+		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+
 		// Package url parses URLs and implements query escaping ==> http://localhost:8080/search?q=ciccio
 		u, err := url.Parse(r.URL.String())
 		if err != nil {
@@ -123,9 +151,6 @@ func searchHandler(newsapi *news.Client) http.HandlerFunc {
 		if page == "" {
 			page = "1"
 		}
-
-		// log the request
-		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 
 		//fmt.Println("Search Query: ", searchQuery)
 		//fmt.Println("Page: ", page)
@@ -141,14 +166,15 @@ func searchHandler(newsapi *news.Client) http.HandlerFunc {
 		// when printing structs, the plus flag (%+v) adds field names
 		//fmt.Printf("%+v", results)
 
-		// we convert age into int first
+		// we convert page into int first
 		nextPage, err := strconv.Atoi(page)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		//We save our results into the Search struct defined above
+		// We save our results into the Search struct defined above
+		// so that we can use it for Pagination
 		search := &Search{
 			Query:      searchQuery,
 			NextPage:   nextPage,
@@ -157,10 +183,7 @@ func searchHandler(newsapi *news.Client) http.HandlerFunc {
 		}
 
 		// this block is to increment NextPage
-		// here we define 'ok' var in scope within the if block only,
-		// 1. set to what is never returned by the func IsLastPage
-		// 2. check if ok == true
-		if ok := !search.IsLastPage(); ok {
+		if !search.IsLastPage() {
 			search.NextPage++
 		}
 
@@ -183,6 +206,71 @@ func searchHandler(newsapi *news.Client) http.HandlerFunc {
 		buffer.WriteTo(w)
 
 	}
+}
+
+func searchByCountryHandler(newsapi *news.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// log the request
+		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+
+		// pare the URL first http://localhost:8080/searchByCountry?country=Italy&q=devops
+		u, err := url.Parse(r.URL.String())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		params := u.Query()
+		country := params.Get("country")
+		searchQuery := params.Get("q")
+		page := params.Get("page")
+		if page == "" {
+			page = "1"
+		}
+
+		results, err := newsapi.FetchNewsByCountry(searchQuery, page, country)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		nextPage, err := strconv.Atoi(page)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		searchByCountry := &SearchByCountry{
+			Query2:     searchQuery,
+			NextPage:   nextPage,
+			TotalPages: int(math.Ceil(float64(results.TotalResults) / float64(newsapi.PageSize))), //rounding the result up to the nearest integer, used later for pagination
+			Results:    results,
+		}
+
+		if !searchByCountry.IsLastPage() {
+			searchByCountry.NextPage++
+		}
+
+		buffer := &bytes.Buffer{}
+
+		err = tmpl.Execute(buffer, searchByCountry)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		buffer.WriteTo(w)
+	}
+
+}
+
+func getApiKeyFromEnv() string {
+	news_api_key := os.Getenv("NEWS_API_KEY")
+	if news_api_key == "" {
+		log.Fatal("News Api Key is not set in ENV.")
+	}
+
+	return news_api_key
 }
 
 func main() {
@@ -211,15 +299,10 @@ func main() {
 	// ** Closure over newsapi parameter
 	mux.HandleFunc("/search", searchHandler(newsapi))
 
+	// searchNews by Country
+	mux.HandleFunc("/searchByCountry", searchByCountryHandler(newsapi))
+
 	// ListenAndServe starts an HTTP server with a given address and handler.
 	// -- http://localhost:8080
 	http.ListenAndServe(":8080", mux)
-}
-func getApiKeyFromEnv() string {
-	news_api_key := os.Getenv("NEWS_API_KEY")
-	if news_api_key == "" {
-		log.Fatal("News Api Key is not set in ENV.")
-	}
-
-	return news_api_key
 }

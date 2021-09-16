@@ -4,24 +4,42 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
-  <title>News App Demo</title>
+  <title>News App</title>
   <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
   <main>
     <header>
-      <a class="logo" href="/">Search</a>
+      <a class="logo" href="/">News App</a>
       <form action="/search" method="GET">
+        <p>Global Search
+        </p>
         <input
           autofocus
           class="search-input"
-          value="{{ .Query }}"
-          placeholder="Search"
+          placeholder="Type word or leave empty for all"
           type="search"
           name="q"
         />
-        <a href="https://github.com/mesmerai/news-aggregator" class="button github-button">View on GitHub</a>
+        <input class="search-button" type="submit" value="Search">
       </form>
+      <form action="/searchByCountry" method="GET">
+        <p>Search per Country:  
+        <input type="radio" name="country" value="Australia"/>
+        <label for="html"> 🇦🇺 Australia</label>
+        <input type="radio" name="country" value="Italy"/>
+        <label for="html"> 🇮🇹 Italy</label>
+        </p>
+        <input
+          autofocus
+          class="search-input"
+          placeholder="Type word or leave empty for all"
+          type="search"
+          name="q"
+        />
+        <input class="search-button" type="submit" value="Search">
+      </form>
+      <a href="https://github.com/mesmerai/news-aggregator" class="button github-button">View on GitHub</a>
     </header>
     <section class="container">
       <div class="result-count">

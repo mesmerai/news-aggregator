@@ -6,7 +6,8 @@ Register API Key at https://newsapi.org/ to retrieve News
 
 Then set the following Environment variable:
 ```
-export NEWS_API_KEY="********************************"
+export NEWS_API_KEY="<news-api-key-here>"
+export DB_PASSWORD="<postgres-db-password-here>
 ```
 
 ## Start the Postgres Docker Image

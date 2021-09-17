@@ -171,64 +171,6 @@ func searchHandler(newsapi *news.Client, searchType string) http.HandlerFunc {
 	}
 }
 
-/*
-func searchByCountryHandler(newsapi *news.Client) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// log the request
-		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
-
-		// pare the URL first http://localhost:8080/searchByCountry?country=Italy&q=devops
-		u, err := url.Parse(r.URL.String())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		params := u.Query()
-		country := params.Get("country")
-		searchQuery := params.Get("q")
-		page := params.Get("page")
-		if page == "" {
-			page = "1"
-		}
-
-		results, err := newsapi.FetchNewsByCountry(searchQuery, page, country)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		nextPage, err := strconv.Atoi(page)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		search := &Search{
-			Query:      searchQuery,
-			NextPage:   nextPage,
-			TotalPages: int(math.Ceil(float64(results.TotalResults) / float64(newsapi.PageSize))), //rounding the result up to the nearest integer, used later for pagination
-			Results:    results,
-		}
-
-		if !search.IsLastPage() {
-			search.NextPage++
-		}
-
-		buffer := &bytes.Buffer{}
-
-		err = tmpl.Execute(buffer, search)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		buffer.WriteTo(w)
-	}
-
-}
-*/
-
 func getApiKeyFromEnv() string {
 	news_api_key := os.Getenv("NEWS_API_KEY")
 	if news_api_key == "" {

@@ -62,38 +62,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 }
 
-/* *Approach 1 *
-1. newsapi var definition outside the main, so it is accessible everywhere in this file
-2. newsapi var assignment inside main
-3. searchHandler standard => mux.HandleFunc("/search", searchHandler)
-*/
-/*
-func searchHandler(w http.ResponseWriter, r *http.Request) {
-	// Package url parses URLs and implements query escaping ==> http://localhost:8080/search?q=ciccio
-	u, err := url.Parse(r.URL.String())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	params := u.Query()
-	searchQuery := params.Get("q")
-	page := params.Get("page")
-	if page == "" {
-		page = "1"
-	}
-
-	// log the request
-	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
-
-	fmt.Println("Search Query: ", searchQuery)
-	fmt.Println("Page: ", page)
-
-	newsapi.FetchNews(searchQuery, page)
-
-}
-*/
-
 /* * Approach 2 *
    * Closure / Functions declared inside of functions are special; they are closures. *
 
@@ -132,19 +100,23 @@ func searchHandler(newsapi *news.Client, searchType string) http.HandlerFunc {
 			page = "1"
 		}
 
-		// country available only when searching by country
-		if searchType == "searchByCountry" {
-			country = params.Get("country")
-		}
-
 		//fmt.Println("Search Query: ", searchQuery)
 		//fmt.Println("Page: ", page)
 
 		if searchType == "searchGlobal" {
-			results, err = newsapi.FetchNews(searchQuery, page)
+			// the Global search returns error in the APi if "q" is not set as the scope of your search is too broad
+			if searchQuery == "" {
+				log.Fatal("Scope of the search is too broad, must specify a keyword.")
+			}
+			results, err = newsapi.FetchNews(searchQuery, page, "")
 		}
 		if searchType == "searchByCountry" {
-			results, err = newsapi.FetchNewsByCountry(searchQuery, page, country)
+			// the searchByCountry returns error in the API if "country" is not set
+			country = params.Get("country")
+			if country == "" {
+				log.Fatal("Country must specified in SearchByCountry.")
+			}
+			results, err = newsapi.FetchNews(searchQuery, page, country)
 		}
 
 		if err != nil {

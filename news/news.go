@@ -69,9 +69,15 @@ func (a *Article) FormatPublishedDate() string {
 
 // FetchNews func with 2 parameters (query and page) and return the Result struct
 //Notice that the search query is URL encoded through the QueryEscape() method.
-func (c *Client) FetchNews(query, page string) (*Results, error) {
+func (c *Client) FetchNews(query, page, country string) (*Results, error) {
 
-	endpoint := fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&pageSize=%d&page=%s&apiKey=%s&sortBy=publishedAt&language=en", url.QueryEscape(query), c.PageSize, page, c.key)
+	endpoint := ""
+	if country == "" {
+		endpoint = fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&pageSize=%d&page=%s&apiKey=%s&sortBy=publishedAt&language=en", url.QueryEscape(query), c.PageSize, page, c.key)
+	} else {
+		endpoint = fmt.Sprintf("https://newsapi.org/v2/top-headlines?q=%s&country=%s&apiKey=%s&pageSize=%d&page=%s", url.QueryEscape(query), countries[country], c.key, c.PageSize, page)
+	}
+
 	log.Printf("Endpoint :%s", endpoint)
 
 	resp, err := c.http.Get(endpoint)
@@ -107,39 +113,4 @@ func (c *Client) FetchNews(query, page string) (*Results, error) {
 	// If v is nil or not a pointer, Unmarshal returns an InvalidUnmarshalError.
 	return res, json.Unmarshal(body, res)
 
-}
-
-func (c *Client) FetchNewsByCountry(query, page, country string) (*Results, error) {
-
-	// endpoint set for top-headlines
-	endpoint := fmt.Sprintf("https://newsapi.org/v2/top-headlines?q=%s&country=%s&apiKey=%s&pageSize=%d&page=%s", url.QueryEscape(query), countries[country], c.key, c.PageSize, page)
-	//endpoint := fmt.Sprintf("https://newsapi.org/v2/top-headlines?q=%s&country=%s&apiKey=%s", url.QueryEscape(query), countries[country], c.key)
-
-	log.Printf("Endpoint :%s", endpoint)
-
-	resp, err := c.http.Get(endpoint)
-	if err != nil {
-		log.Fatal("Error getting the response => ", err)
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	// Response body is converted to a byte slice, if no errors
-	body, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		log.Fatal("Error reading the response => ", err)
-		return nil, err
-	}
-
-	// Print response body and ret code
-	//fmt.Println(string(body))
-	//fmt.Printf("Response Status: %s\n", resp.Status)
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf(string(body))
-	}
-
-	res := &Results{}
-	return res, json.Unmarshal(body, res)
 }

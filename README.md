@@ -180,45 +180,8 @@ List Databases
 ```
 postgres-# \l
 ```
-## Start the Postgres Docker Image
-Build the image from the ```db/Dockerfile```:
-```
-$ sudo docker build -t mesmerai/news-postgres db
-```
 
-Run the image passing the POSTGRES_PASSWORD as parameter:
-
-```
-$ sudo docker run --name news-postgres -p 5432:5432 -e POSTGRES_PASSWORD="**************" -d mesmerai/news-postgres
-```
-
-Check process docker image:
-```
-$ sudo docker ps -all
-CONTAINER ID   IMAGE                    COMMAND                  CREATED          STATUS          PORTS                    NAMES
-1509e02ade12   mesmerai/news-postgres   "docker-entrypoint.s…"   36 seconds ago   Up 35 seconds   0.0.0.0:5432->5432/tcp   news-postgres
-```
-
-Connect to DB and check if Tables are created:
-```
-# psql -h localhost -p 5432 -U news_db_user -d news -W
-Password: 
-psql (13.4)
-Type "help" for help.
-
--- list tables
-news=# \d
-                 List of relations
- Schema |      Name      |   Type   |    Owner     
---------+----------------+----------+--------------
- public | article        | table    | news_db_user
- public | article_id_seq | sequence | news_db_user
- public | source         | table    | news_db_user
- public | source_id_seq  | sequence | news_db_user
-(4 rows)
-
-```
-List tables:
+List tables
 ```
 news=# \d
                List of relations

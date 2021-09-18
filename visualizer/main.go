@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mesmerai/news-aggregator/news-visualizer/news"
+	"github.com/mesmerai/news-aggregator/visualizer/news"
 )
 
 // Only needed with * Approach 1 * to make newsapi accessible to SearchHandler

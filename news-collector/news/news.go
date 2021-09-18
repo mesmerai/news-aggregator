@@ -13,16 +13,16 @@ import (
 /* Article structs */
 type Article struct {
 	Source struct {
-		ID   interface{} `json:"id"`
-		Name string      `json:"name"`
+		ID   string `json:"id"`
+		Name string `json:"name"`
 	} `json:"source"`
-	Author      interface{} `json:"author"`
-	Title       string      `json:"title"`
-	Description string      `json:"description"`
-	URL         string      `json:"url"`
-	URLToImage  string      `json:"urlToImage"`
-	PublishedAt time.Time   `json:"publishedAt"`
-	Content     string      `json:"content"`
+	Author      string    `json:"author"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	URL         string    `json:"url"`
+	URLToImage  string    `json:"urlToImage"`
+	PublishedAt time.Time `json:"publishedAt"`
+	Content     string    `json:"content"`
 }
 
 type Results struct {
@@ -78,7 +78,8 @@ func (c *Client) FetchNews(query, page, country string) (*Results, error) {
 		endpoint = fmt.Sprintf("https://newsapi.org/v2/top-headlines?q=%s&country=%s&apiKey=%s&pageSize=%d&page=%s", url.QueryEscape(query), countries[country], c.key, c.PageSize, page)
 	}
 
-	log.Printf("Endpoint :%s", endpoint)
+	// log a secret, keep it commented
+	//log.Printf("Endpoint :%s", endpoint)
 
 	resp, err := c.http.Get(endpoint)
 

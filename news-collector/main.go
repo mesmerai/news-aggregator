@@ -4,9 +4,12 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"time"
 
 	_ "github.com/lib/pq"
+	"github.com/mesmerai/news-aggregator/news-collector/news"
 )
 
 var environment = getEnv()
@@ -14,13 +17,15 @@ var db_host string = "localhost"
 var db_port int = 5432
 var db_name string = "news"
 var db_user string = "news_db_user"
-var db_password = environment["db_password"]
 
-func NewDbConnector(db_host string, db_port int, db_name string, db_user string, db_password string) {
+// from Env
+var db_password = environment["db_password"]
+var news_api_key string = environment["news_api_key"]
+
+func NewDbConnector(db_host string, db_port int, db_name string, db_user string, db_password string) (db *sql.DB) {
 
 	// currently 'sslmode=verify-full' gives error: "sslmode=verify-full"
 	connection_string := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", db_host, db_port, db_user, db_password, db_name)
-	//fmt.Println(connection_string)
 
 	// sql.Open() simply validates the arguments provided, doesn't connect yet!
 	db_conn, err := sql.Open("postgres", connection_string)
@@ -28,7 +33,7 @@ func NewDbConnector(db_host string, db_port int, db_name string, db_user string,
 		log.Fatal("Error validating DB connection parameters => ", err)
 	}
 
-	defer db_conn.Close()
+	//defer db_conn.Close()
 
 	// the method Ping() is actually attempting a connection to the database
 	err = db_conn.Ping()
@@ -36,33 +41,43 @@ func NewDbConnector(db_host string, db_port int, db_name string, db_user string,
 		log.Fatal("Error connecting to DB => ", err)
 	}
 
-	log.Println("DB Connection Successful!")
+	log.Println("Connection to DB successful.")
+	return db_conn
 
 }
 
 func main() {
 
 	// connect to DB
-	NewDbConnector(db_host, db_port, db_name, db_user, db_password)
+	myDB := NewDbConnector(db_host, db_port, db_name, db_user, db_password)
 
-	/*
-		// if returns too many results, use from to select a time window
-		globalResults, err = newsapi.FetchNews(searchQuery, page, "")
-		italianResults, err = newsapi.FetchNews(searchQuery, page, "Italy")
-		australianResults, err = newsapi.FetchNews(searchQuery, page, "Australia")
-	*/
-	/*
-		// some vars declared
-		var err error
-		country := ""
-		results := &news.Results{}
-		from := "" // time from
-		to := //time to
+	// INSERT INTO source (name) VALUES ('Ansa');
+	sqlInsert := `INSERT INTO source (name) VALUES ($1)`
+	_, err := myDB.Exec(sqlInsert, "Ansa.it")
+	if err != nil {
+		log.Fatal("Error on SQL INSERT => ", err)
+	}
 
-		myClient := &http.Client{Timeout: 10 * time.Second}
-		newsapi := news.NewClient(myClient, news_api_key, 20)
-		results, err = newsapi.FetchNews("", page, "", from, to)
-	*/
+	defer myDB.Close()
+
+	// get news
+	myClient := &http.Client{Timeout: 10 * time.Second}
+	newsapi := news.NewClient(myClient, news_api_key, 20)
+	results, err := newsapi.FetchNews("", "1", "Italy")
+
+	if err != nil {
+		log.Fatal("Error retrieving news => ", err)
+	}
+
+	fmt.Println("-- Total Results --")
+	fmt.Println(results.TotalResults)
+	fmt.Println("-- Iterate on each Article --")
+	for _, this_article := range results.Articles {
+		fmt.Printf("Source ID: %v\n", this_article.Source.ID)
+		fmt.Printf("Source Name: %v\n", this_article.Source.Name)
+		fmt.Printf("Title: %s\n", this_article.Title)
+	}
+
 }
 
 func getEnv() map[string]string {

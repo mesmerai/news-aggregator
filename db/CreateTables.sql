@@ -1,16 +1,16 @@
-CREATE TABLE Source (
+CREATE TABLE Sources (
 		id SERIAL PRIMARY KEY,
-		name VARCHAR(255)
+		name TEXT
 );
 
-CREATE TABLE Article (
+CREATE TABLE Articles (
 	id SERIAL PRIMARY KEY, 
-  source_id INT references Source(id),
- 	author      VARCHAR(255),
-	title       VARCHAR(255),
-	description VARCHAR(255),
-	url         VARCHAR(255),
-	url_to_image  VARCHAR(255),
-	published_at DATE,
-	content     VARCHAR(255)
+  source_id INT references Sources(id),
+ 	author      TEXT,
+	title       TEXT,
+	description TEXT,
+	url         TEXT,
+	url_to_image  TEXT,
+	published_at TIMESTAMP with time zone,
+	content     TEXT
 );

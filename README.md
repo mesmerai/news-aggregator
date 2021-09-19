@@ -49,6 +49,22 @@ news=# \d
 
 ```
 
+### To rebuild the image
+```
+-- list containers
+$ sudo docker ps -all
+-- stop container
+$ sudo docker stop <container-id>
+-- remove container
+$ sudo docker rm <container-id>
+-- list images
+$ sudo docker images
+-- remove the image
+$ sudo docker rmi mesmerai/news-postgres
+```
+
+Then rebuild (see above).   
+
 # Dev Takeaways
 
 ## Project init
@@ -196,9 +212,9 @@ news=# \d
 
 ```
 
-Describe table 'Article'
+Describe table 'Articles'
 ```
-news-# \d article
+news-# \d articles
                                        Table "public.article"
     Column    |          Type          | Collation | Nullable |               Default               
 --------------+------------------------+-----------+----------+-------------------------------------

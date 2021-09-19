@@ -46,17 +46,98 @@ func NewDbConnector(db_host string, db_port int, db_name string, db_user string,
 
 }
 
+func InsertSource(db *sql.DB, sourceName string) (sourceID int) {
+
+	id := 0
+	var selectRows *sql.Rows
+	var insertRow *sql.Row
+	var selectErr, insertErr error
+	sqlSelect := ""
+	sqlInsert := ""
+
+	// there's nothing provided in the Sql package to check if Rows has no records inside
+	// so I define an empty slice and fill it in the iteration below
+	sources := make([]string, 0)
+
+	// Source struct to dealt with INSERT later. Declare and initialize.
+	type Source struct {
+		id   int
+		name string
+	}
+	var thisSource = Source{}
+
+	/*
+		var thisID int
+		var thisName string
+	*/
+
+	// check if Source exists
+	sqlSelect = "SELECT * FROM source WHERE name = $1"
+	log.Printf("Retrieving sources for '%s'", sourceName)
+	selectRows, selectErr = db.Query(sqlSelect, sourceName)
+	if selectErr != nil {
+		log.Fatal("Error on SQL SELECT => ", selectErr)
+	}
+
+	// rows is a struct - https://cs.opensource.google/go/go/+/refs/tags/go1.17.1:src/database/sql/sql.go;l=2875
+	// Rows is the result of a query.
+	// Its cursor starts before the first row of the result set. Use Next to advance from row to row.
+	for selectRows.Next() {
+
+		// Scan copies the columns in the current row into the values pointed at by dest.
+		// The number of values in dest must be the same as the number of columns in Rows.
+		err := selectRows.Scan(&thisSource.id, &thisSource.name)
+		if err != nil {
+			log.Fatal("Error on reading SQL SELECT results => ", err)
+		}
+		// fill the slice to check if there are rows later
+		sources = append(sources, thisSource.name)
+
+		fmt.Printf("- rows.id: %d\n", thisSource.id)
+		fmt.Printf("- rows.name: %s\n", thisSource.name)
+
+	}
+
+	defer selectRows.Close()
+
+	/*
+		fmt.Println(" -- Printing sources slice --")
+		fmt.Printf("source slice: %v\n", sources)
+		fmt.Printf("len(source): %d\n", len(sources))
+	*/
+
+	// the 'source' slide is empty if no rows are returned by the SELECT
+	if len(sources) == 0 {
+		log.Println("No sources found. Proceed with INSERT.")
+
+		// INSERT INTO source (name) VALUES ('Ansa');
+		sqlInsert = `INSERT INTO source (name) VALUES ($1) RETURNING id`
+
+		// QueryRow returns a *Row
+		insertRow = db.QueryRow(sqlInsert, sourceName)
+		insertErr = insertRow.Scan(&id)
+		if insertErr != nil {
+			log.Fatal("Error on SQL INSERT => ", insertErr)
+		}
+
+		// return the id of the source just INSERTed
+		return id
+
+	} else {
+
+		// return the id of existing source, so that we can link as foreign key in Article
+		return thisSource.id
+	}
+
+}
+
 func main() {
 
 	// connect to DB
 	myDB := NewDbConnector(db_host, db_port, db_name, db_user, db_password)
 
-	// INSERT INTO source (name) VALUES ('Ansa');
-	sqlInsert := `INSERT INTO source (name) VALUES ($1)`
-	_, err := myDB.Exec(sqlInsert, "Ansa.it")
-	if err != nil {
-		log.Fatal("Error on SQL INSERT => ", err)
-	}
+	sourceID := InsertSource(myDB, "Repubblica.it")
+	fmt.Printf("Source ID returned from INSERT: %d\n", sourceID)
 
 	defer myDB.Close()
 
@@ -69,7 +150,8 @@ func main() {
 		log.Fatal("Error retrieving news => ", err)
 	}
 
-	fmt.Println("-- Total Results --")
+	fmt.Println(" ")
+	fmt.Println("-- News Total Results --")
 	fmt.Println(results.TotalResults)
 	fmt.Println("-- Iterate on each Article --")
 	for _, this_article := range results.Articles {

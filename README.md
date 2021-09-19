@@ -19,7 +19,7 @@ $ sudo docker build -t mesmerai/news-postgres db
 Run the image passing the POSTGRES_PASSWORD as parameter:
 
 ```
-$ sudo docker run --name news-postgres -p 5432:5432 -e POSTGRES_PASSWORD="**************" -d mesmerai/news-postgres
+$ sudo docker run --name news-postgres -p 5432:5432 -e POSTGRES_PASSWORD="<postgres-db-password-here> -d mesmerai/news-postgres
 ```
 
 Check running docker image:

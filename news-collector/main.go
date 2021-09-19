@@ -157,7 +157,7 @@ func main() {
 
 	/* ** get news ** */
 	myClient := &http.Client{Timeout: 10 * time.Second}
-	newsapi := news.NewClient(myClient, news_api_key, 20)
+	newsapi := news.NewClient(myClient, news_api_key, 100)
 	results, err := newsapi.FetchNews("", "1", "Italy")
 
 	if err != nil {

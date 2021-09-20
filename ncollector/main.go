@@ -25,114 +25,162 @@ var news_api_key string = environment["news_api_key"]
 
 func main() {
 
-	/* ** get news ** */
+	/* ** vars ** */
+	var sourceID int
+	var domainID int
+
+	// there's nothing provided in the Sql package to check if Rows has no records inside
+	// so I define an empty slice and fill it in the iteration below
+	sources := make([]string, 0)
+	domains := make([]string, 0)
+
+	// Source struct to deal with INSERT later. Declare and initialize.
+	type Source struct {
+		id   int
+		name string
+	}
+	var thisSource = Source{}
+
+	// Domain struct to deal with INSERT later. Declare and initialize.
+	type Domain struct {
+		id   int
+		name string
+	}
+	var thisDomain = Domain{}
+
+	/* ** News Client ** */
 	myClient := &http.Client{Timeout: 10 * time.Second}
 	newsapi := news.NewClient(myClient, news_api_key, 100)
 
-	//newsapi.FetchSources()
+	/* ** DB Conn ** */
+	myDB := data.NewDBClient(db_host, db_port, db_name, db_user, db_password)
 
-	FetchAndStoreArticles(newsapi, "ByCountry", "Italy")
-	FetchAndStoreArticles(newsapi, "ByCountry", "Australia")
+	// myDB = *DBClient(db_conn)
+	defer myDB.Database.Close()
 
-	// here should call a Global Search for one specific domain to test
-	// --> this need to loop for each domain stored in the DB
-	FetchAndStoreArticles(newsapi, "Global", "news.com.au")
-
-	/* ** Set time window for Global Search ** */
-	// from 1 hour to now
-	/*
-		to := time.Now()
-		fmt.Printf("To: %s\n", to)
-
-		from := to.Add(-1 * time.Hour)
-		fmt.Printf("From: %s\n", from)
-
-		toRFC := to.Format(time.RFC3339)
-		fmt.Printf("To (RFC): %s\n", toRFC)
-
-		fromRFC := from.Format(time.RFC3339)
-		fmt.Printf("From (RFC): %s\n", fromRFC)
-	*/
-	// Global search Must be restricted with one of those params (q, qInTitle, sources, domains) otherwise doesn't work
-	//FetchAndStoreArticles(newsapi, "Global", "", fromRFC, toRFC)
-
-}
-
-func FetchAndStoreSources() {
-	// to do (maybe not)
-}
-
-func FetchAndStoreArticles(n *news.Client, searchType, searchParameter string) {
-
-	var results *news.Results
-	var err error
+	log.Println("Closing DB resources.")
 
 	log.Println("==========================================================")
-	log.Printf("Initiate News collection: %s", searchType)
+	log.Println("Initiate News collection")
 	log.Println("==========================================================")
 
-	switch {
-	case searchType == "ByCountry":
-		if searchParameter == "" {
-			log.Fatal("searchParameter must be set with the country name in SearchByCountry")
-		} else {
-			results, err = n.FetchNews("ByCountry", "", "1", searchParameter)
-		}
-	case searchType == "Global":
-		if searchParameter == "" {
-			log.Fatal("searchParameter must be set with the domain name in GlobalSearch")
-		} else {
-			results, err = n.FetchNews("Global", "", "1", searchParameter)
-		}
-	default:
-		log.Fatal("Search type Must be specified. Allowed values: 'Global', 'ByCountry'")
-	}
+	/* ********** Start with Italy ***************************************** */
+	log.Println("**********************************************************")
+	log.Println("Search ByCountry: Italy")
+	log.Println("**********************************************************")
 
+	// -- potentially can call a function
+	// -- e.g. for Italy (require iternation of Articles and domain regexp defined)
+	// CheckAdStore (DB, country, source, domain) ?!
+	// CheckAndStore (myDB, "Italy", newsArticle.Source.Name, domain)
+
+	results, err := newsapi.FetchNews("ByCountry", "", "1", "Italy")
 	if err != nil {
 		log.Fatal("Error retrieving news => ", err)
 	}
 
-	log.Println("News collection completed.")
-	log.Printf("Total results retrieved for '%s': %v", searchParameter, results.TotalResults)
+	results2, err2 := newsapi.FetchNews("ByCountry", "", "1", "Australia")
+	if err2 != nil {
+		log.Fatal("Error retrieving news => ", err)
+	}
 
-	/* ** write news to db ** */
-	myDB := data.NewDbConnector(db_host, db_port, db_name, db_user, db_password)
+	log.Println("News collection completed.")
+	log.Printf("Total results retrieved for '%s': %v", "Italy", results.TotalResults)
+	log.Printf("Total results retrieved for '%s': %v", "Australia", results2.TotalResults)
 
 	log.Println("--------------------------------------------------------")
 	log.Println("Iterating on Articles.")
 	log.Println("--------------------------------------------------------")
 
-	// loop  for each Article and call:
-	// insertSource, insertDomain, insertArticle
 	for i, newsArticle := range results.Articles {
 		log.Printf(" >> Article #%d << | Title: '%s'", i+1, newsArticle.Title)
 
-		/* ** insertSource ** */
-		sourceID := data.InsertSource(myDB, newsArticle.Source.Name)
-		//fmt.Printf("Source ID returned from INSERT: %d\n", sourceID)
-
-		/* ** insertDomain ** */
+		/* ** Extract Domain ** */
 		// extract domain name from article URL. From https//www.techcrunch.com/zyx TO techcrunch.com
 		log.Println("URL: ", newsArticle.URL)
-
 		// cut the http(s) and www part from URL, if present
 		regexp := regexp.MustCompile(`http(s?)://(www.)?`)
 		cutURL := regexp.ReplaceAllString(newsArticle.URL, "")
-
 		components := strings.Split(cutURL, "/")
 		domain := components[0]
 		log.Println("Domain extracted from URL: ", domain)
 
-		// then call
-		domainID := data.InsertDomain(myDB, domain)
+		// ----------- maybe can define ----------------
+		// domainID := myDB.GetDomainID(domain) to return 0 if no rows
+		// sourceID := myDB.GetSourceID(newsArticle.Source.Name) to return 0 if no rows
 
-		data.InsertArticle(myDB, sourceID, domainID, newsArticle.Author, newsArticle.Title, newsArticle.Description, newsArticle.URL, newsArticle.URLToImage, newsArticle.PublishedAt, newsArticle.Content, "", "", "")
+		/* ** Check Domains ** */
+		domainRows := myDB.GetDomainsByName(domain)
 
-		defer myDB.Close()
-		log.Println("Closing DB resources.")
+		for domainRows.Next() {
+
+			// Scan copies the columns in the current row into the values pointed at by dest.
+			// The number of values in dest must be the same as the number of columns in Rows.
+			err := domainRows.Scan(&thisDomain.id, &thisDomain.name)
+			if err != nil {
+				log.Fatal("Error on reading SQL SELECT results => ", err)
+			}
+			// fill the slice to check if there are rows later
+			domains = append(domains, thisDomain.name)
+			log.Printf("Records found for domain: '%s'", domain)
+			log.Printf(" - rows.id: %d\n", thisDomain.id)
+			log.Printf(" - rows.name: %s\n", thisDomain.name)
+
+		}
+		log.Println("Closing rows resources.")
+		defer domainRows.Close()
+
+		// the 'source' slide is empty if no rows are returned by the SELECT
+		if len(domains) == 0 {
+			log.Printf("No domains found for '%s'. Proceed with INSERT.", domain)
+
+			/* ** insertDomain ** */
+			domainID = myDB.InsertDomain(domain)
+		} else {
+			log.Println("The domain already exists. No INSERT required.")
+			domainID = thisDomain.id
+		}
+
+		/* ** Check Sources ** */
+		sourceRows := myDB.GetSourcesByName(newsArticle.Source.Name)
+
+		for sourceRows.Next() {
+
+			// Scan copies the columns in the current row into the values pointed at by dest.
+			// The number of values in dest must be the same as the number of columns in Rows.
+			err := sourceRows.Scan(&thisSource.id, &thisSource.name)
+			if err != nil {
+				log.Fatal("Error on reading SQL SELECT results => ", err)
+			}
+			// fill the slice to check if there are rows later
+			sources = append(sources, thisSource.name)
+			log.Printf("Records found for source: '%s'", newsArticle.Source.Name)
+			log.Printf(" - rows.id: %d\n", thisSource.id)
+			log.Printf(" - rows.name: %s\n", thisSource.name)
+
+		}
+		log.Println("Closing rows resources.")
+		defer sourceRows.Close()
+
+		// the 'source' slide is empty if no rows are returned by the SELECT
+		if len(sources) == 0 {
+			log.Printf("No sources found for '%s'. Proceed with INSERT.", newsArticle.Source.Name)
+
+			/* ** insertSource ** */
+			sourceID = myDB.InsertSource(newsArticle.Source.Name)
+		} else {
+			log.Println("The source already exists. No INSERT required.")
+			sourceID = thisSource.id
+		}
+
+		/* ** InsertArticle ** */
+		myDB.InsertArticle(sourceID, domainID, newsArticle.Author, newsArticle.Title, newsArticle.Description, newsArticle.URL, newsArticle.URLToImage, newsArticle.PublishedAt, newsArticle.Content, "", "", "")
+
 		log.Println("--------------------------------------------------------")
 
 	}
+
+	//FetchAndStoreArticles(newsapi, "Global", "", myDB)
 
 }
 

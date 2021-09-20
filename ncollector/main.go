@@ -32,7 +32,11 @@ func main() {
 	//newsapi.FetchSources()
 
 	FetchAndStoreArticles(newsapi, "ByCountry", "Italy")
-	//FetchAndStore(newsapi, "ByCountry", "Australia")
+	FetchAndStoreArticles(newsapi, "ByCountry", "Australia")
+
+	// here should call a Global Search for one specific domain to test
+	// --> this need to loop for each domain stored in the DB
+	FetchAndStoreArticles(newsapi, "Global", "news.com.au")
 
 	/* ** Set time window for Global Search ** */
 	// from 1 hour to now
@@ -55,7 +59,7 @@ func main() {
 }
 
 func FetchAndStoreSources() {
-	// to do
+	// to do (maybe not)
 }
 
 func FetchAndStoreArticles(n *news.Client, searchType, searchParameter string) {
@@ -63,17 +67,23 @@ func FetchAndStoreArticles(n *news.Client, searchType, searchParameter string) {
 	var results *news.Results
 	var err error
 
+	log.Println("==========================================================")
 	log.Printf("Initiate News collection: %s", searchType)
+	log.Println("==========================================================")
 
 	switch {
 	case searchType == "ByCountry":
 		if searchParameter == "" {
-			log.Fatal("searchParameter must specified in SearchByCountry")
+			log.Fatal("searchParameter must be set with the country name in SearchByCountry")
 		} else {
-			results, err = n.FetchNews("ByCountry", "", "1", "Italy")
+			results, err = n.FetchNews("ByCountry", "", "1", searchParameter)
 		}
 	case searchType == "Global":
-		results, err = n.FetchNews("Global", "", "1", "")
+		if searchParameter == "" {
+			log.Fatal("searchParameter must be set with the domain name in GlobalSearch")
+		} else {
+			results, err = n.FetchNews("Global", "", "1", searchParameter)
+		}
 	default:
 		log.Fatal("Search type Must be specified. Allowed values: 'Global', 'ByCountry'")
 	}
@@ -83,12 +93,14 @@ func FetchAndStoreArticles(n *news.Client, searchType, searchParameter string) {
 	}
 
 	log.Println("News collection completed.")
-	log.Printf("Total results retrieved from 'Italy': %v", results.TotalResults)
-
-	log.Println("Iterating on Articles.")
+	log.Printf("Total results retrieved for '%s': %v", searchParameter, results.TotalResults)
 
 	/* ** write news to db ** */
 	myDB := data.NewDbConnector(db_host, db_port, db_name, db_user, db_password)
+
+	log.Println("--------------------------------------------------------")
+	log.Println("Iterating on Articles.")
+	log.Println("--------------------------------------------------------")
 
 	// loop  for each Article and call:
 	// insertSource, insertDomain, insertArticle
@@ -117,6 +129,9 @@ func FetchAndStoreArticles(n *news.Client, searchType, searchParameter string) {
 		data.InsertArticle(myDB, sourceID, domainID, newsArticle.Author, newsArticle.Title, newsArticle.Description, newsArticle.URL, newsArticle.URLToImage, newsArticle.PublishedAt, newsArticle.Content, "", "", "")
 
 		defer myDB.Close()
+		log.Println("Closing DB resources.")
+		log.Println("--------------------------------------------------------")
+
 	}
 
 }

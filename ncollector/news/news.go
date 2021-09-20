@@ -130,21 +130,18 @@ func (c *Client) FetchSources() {
 
 // FetchNews func with 2 parameters (query and page) and return the Result struct
 //Notice that the search query is URL encoded through the QueryEscape() method.
-func (c *Client) FetchNews(searchType, query, page, country string) (*Results, error) {
+func (c *Client) FetchNews(searchType, query, page, param string) (*Results, error) {
 
 	var endpoint = ""
 
 	switch {
 	case searchType == "ByCountry":
-		if country == "" {
-			log.Fatal("Must specify 'country' in SearchByCountry")
-			break
-		} else {
-			endpoint = fmt.Sprintf("https://newsapi.org/v2/top-headlines?q=%s&country=%s&apiKey=%s&pageSize=%d&page=%s", url.QueryEscape(query), countries[country], c.key, c.PageSize, page)
-		}
+		// here param is the 'country'
+		endpoint = fmt.Sprintf("https://newsapi.org/v2/top-headlines?q=%s&country=%s&apiKey=%s&pageSize=%d&page=%s", url.QueryEscape(query), countries[param], c.key, c.PageSize, page)
 	case searchType == "Global":
-		endpoint = fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&pageSize=%d&page=%s&apiKey=%s&sortBy=publishedAt&language=en", url.QueryEscape(query), c.PageSize, page, c.key)
-		log.Println("endpoint: ", endpoint)
+		// here param is the 'domains'
+		endpoint = fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&domains=%s&pageSize=%d&page=%s&apiKey=%s&sortBy=publishedAt&language=en", url.QueryEscape(query), param, c.PageSize, page, c.key)
+		//log.Println("endpoint: ", endpoint)
 	default:
 		log.Fatal("Search type Must be specified. Allowed values: 'Global', 'ByCountry'")
 	}

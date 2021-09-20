@@ -1,4 +1,19 @@
-# News Aggregator
+# News Aggregator <WIP>
+
+The plan is to create 2 microservices:   
+
+## ncollector 
+Service scheduled to fetch articles via News API and populate the DB:
+- fetch news ByCountry (Italy and Australia supported)
+- populate sources and domains 
+- fetch news Globally per domain  
+- ..   
+
+## visualizer
+Service that provides a web interface to search news with different filters. 
+
+
+# Setup 
 
 ## Set News Api Key
 

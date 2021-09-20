@@ -58,7 +58,7 @@ func InsertSource(db *sql.DB, sourceName string) (sourceID int) {
 	}
 	var thisSource = Source{}
 
-	log.Println("Checking if the source is the DB already.")
+	log.Println("Checking if the source is in the DB already.")
 
 	// check if Source exists
 	sqlSelect = "SELECT * FROM sources WHERE name = $1"
@@ -143,7 +143,7 @@ func InsertDomain(db *sql.DB, domainName string) (domainID int) {
 	}
 	var thisDomain = Domain{}
 
-	log.Println("Checking if the domain is the DB already.")
+	log.Println("Checking if the domain is in the DB already.")
 
 	// check if Source exists
 	sqlSelect = "SELECT * FROM domains WHERE name = $1"
@@ -166,7 +166,7 @@ func InsertDomain(db *sql.DB, domainName string) (domainID int) {
 		}
 		// fill the slice to check if there are rows later
 		domains = append(domains, thisDomain.name)
-		log.Printf("Records found for source: '%s'", domainName)
+		log.Printf("Records found for domain: '%s'", domainName)
 		//log.Printf(" - rows.id: %d\n", thisSource.id)
 		//log.Printf(" - rows.name: %s\n", thisSource.name)
 

@@ -31,6 +31,22 @@ type Results struct {
 	Articles     []Article `json:"articles"`
 }
 
+/* Source struct (not used yet) */
+type Source struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	URL         string `json:"url"`
+	Category    string `json:"category"`
+	Language    string `json:"language"`
+	Country     string `json:"country"`
+}
+
+type Sources struct {
+	Status  string   `json:"status"`
+	Sources []Source `json:"sources"`
+}
+
 // Countries Map
 var countries = map[string]string{
 	"Australia": "au",
@@ -67,6 +83,51 @@ func (a *Article) FormatPublishedDate() string {
 
 }
 
+func (c *Client) FetchSources() {
+
+	/*
+		this endpoint:
+		- does not retrieve ALL the sources
+		- they have their own id (r.g. "abc-news"
+
+		Better to:
+		- populate domains from articles
+		- call search Global with domains list
+	*/
+
+	var endpoint = ""
+
+	//https://newsapi.org/v2/top-headlines/sources?apiKey=API_KEY
+	endpoint = fmt.Sprintf("https://newsapi.org/v2/top-headlines/sources?apiKey=%s", c.key)
+
+	resp, err := c.http.Get(endpoint)
+
+	// Handle error from the response
+	if err != nil {
+		log.Fatal("Error getting a response => ", err)
+		//return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	// Response body is converted to a byte slice, if no errors
+	body, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		log.Fatal("Error reading the response => ", err)
+		//return nil, err
+	}
+
+	// this is for Printing Response Body and Ret Code
+	fmt.Println(string(body))
+	fmt.Printf("Response Status: %s\n", resp.Status)
+
+	// checking ret code, http.StatusOk is a const from http pkg
+	if resp.StatusCode != http.StatusOK {
+		//return nil, fmt.Errorf(string(body))
+	}
+}
+
 // FetchNews func with 2 parameters (query and page) and return the Result struct
 //Notice that the search query is URL encoded through the QueryEscape() method.
 func (c *Client) FetchNews(searchType, query, page, country string) (*Results, error) {
@@ -83,19 +144,10 @@ func (c *Client) FetchNews(searchType, query, page, country string) (*Results, e
 		}
 	case searchType == "Global":
 		endpoint = fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&pageSize=%d&page=%s&apiKey=%s&sortBy=publishedAt&language=en", url.QueryEscape(query), c.PageSize, page, c.key)
+		log.Println("endpoint: ", endpoint)
 	default:
 		log.Fatal("Search type Must be specified. Allowed values: 'Global', 'ByCountry'")
 	}
-
-	/*
-		if country == "" {
-			endpoint = fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&pageSize=%d&page=%s&apiKey=%s&sortBy=publishedAt&language=en", url.QueryEscape(query), c.PageSize, page, c.key)
-		} else {
-			endpoint = fmt.Sprintf("https://newsapi.org/v2/top-headlines?q=%s&country=%s&apiKey=%s&pageSize=%d&page=%s", url.QueryEscape(query), countries[country], c.key, c.PageSize, page)
-		}
-	*/
-	// log a secret, keep it commented
-	//log.Printf("Endpoint :%s", endpoint)
 
 	resp, err := c.http.Get(endpoint)
 

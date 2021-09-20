@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
+	"strings"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -27,14 +29,36 @@ func main() {
 	myClient := &http.Client{Timeout: 10 * time.Second}
 	newsapi := news.NewClient(myClient, news_api_key, 100)
 
-	FetchAndStore(newsapi, "ByCountry", "Italy")
-	FetchAndStore(newsapi, "ByCountry", "Australia")
-	//FetchAndStore(newsapi, "Global", "")
-	// Global search need to be restricted by some parameter (e.g from/to, source ..)
+	//newsapi.FetchSources()
+
+	FetchAndStoreArticles(newsapi, "ByCountry", "Italy")
+	//FetchAndStore(newsapi, "ByCountry", "Australia")
+
+	/* ** Set time window for Global Search ** */
+	// from 1 hour to now
+	/*
+		to := time.Now()
+		fmt.Printf("To: %s\n", to)
+
+		from := to.Add(-1 * time.Hour)
+		fmt.Printf("From: %s\n", from)
+
+		toRFC := to.Format(time.RFC3339)
+		fmt.Printf("To (RFC): %s\n", toRFC)
+
+		fromRFC := from.Format(time.RFC3339)
+		fmt.Printf("From (RFC): %s\n", fromRFC)
+	*/
+	// Global search Must be restricted with one of those params (q, qInTitle, sources, domains) otherwise doesn't work
+	//FetchAndStoreArticles(newsapi, "Global", "", fromRFC, toRFC)
 
 }
 
-func FetchAndStore(n *news.Client, searchType, searchParameter string) {
+func FetchAndStoreSources() {
+	// to do
+}
+
+func FetchAndStoreArticles(n *news.Client, searchType, searchParameter string) {
 
 	var results *news.Results
 	var err error
@@ -66,13 +90,31 @@ func FetchAndStore(n *news.Client, searchType, searchParameter string) {
 	/* ** write news to db ** */
 	myDB := data.NewDbConnector(db_host, db_port, db_name, db_user, db_password)
 
-	// loop  for each Article
+	// loop  for each Article and call:
+	// insertSource, insertDomain, insertArticle
 	for i, newsArticle := range results.Articles {
 		log.Printf(" >> Article #%d << | Title: '%s'", i+1, newsArticle.Title)
+
+		/* ** insertSource ** */
 		sourceID := data.InsertSource(myDB, newsArticle.Source.Name)
 		//fmt.Printf("Source ID returned from INSERT: %d\n", sourceID)
 
-		data.InsertArticle(myDB, sourceID, newsArticle.Author, newsArticle.Title, newsArticle.Description, newsArticle.URL, newsArticle.URLToImage, newsArticle.PublishedAt, newsArticle.Content)
+		/* ** insertDomain ** */
+		// extract domain name from article URL. From https//www.techcrunch.com/zyx TO techcrunch.com
+		log.Println("URL: ", newsArticle.URL)
+
+		// cut the http(s) and www part from URL, if present
+		regexp := regexp.MustCompile(`http(s?)://(www.)?`)
+		cutURL := regexp.ReplaceAllString(newsArticle.URL, "")
+
+		components := strings.Split(cutURL, "/")
+		domain := components[0]
+		log.Println("Domain extracted from URL: ", domain)
+
+		// then call
+		domainID := data.InsertDomain(myDB, domain)
+
+		data.InsertArticle(myDB, sourceID, domainID, newsArticle.Author, newsArticle.Title, newsArticle.Description, newsArticle.URL, newsArticle.URLToImage, newsArticle.PublishedAt, newsArticle.Content, "", "", "")
 
 		defer myDB.Close()
 	}

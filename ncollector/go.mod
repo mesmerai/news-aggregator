@@ -1,4 +1,4 @@
-module github.com/mesmerai/news-aggregator/news-collector
+module github.com/mesmerai/news-aggregator/ncollector
 
 go 1.17
 

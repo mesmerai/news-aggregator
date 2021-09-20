@@ -23,12 +23,36 @@ var news_api_key string = environment["news_api_key"]
 
 func main() {
 
-	log.Println("Initiate News collection")
-
 	/* ** get news ** */
 	myClient := &http.Client{Timeout: 10 * time.Second}
 	newsapi := news.NewClient(myClient, news_api_key, 100)
-	results, err := newsapi.FetchNews("", "1", "Italy")
+
+	FetchAndStore(newsapi, "ByCountry", "Italy")
+	FetchAndStore(newsapi, "ByCountry", "Australia")
+	//FetchAndStore(newsapi, "Global", "")
+	// Global search need to be restricted by some parameter (e.g from/to, source ..)
+
+}
+
+func FetchAndStore(n *news.Client, searchType, searchParameter string) {
+
+	var results *news.Results
+	var err error
+
+	log.Printf("Initiate News collection: %s", searchType)
+
+	switch {
+	case searchType == "ByCountry":
+		if searchParameter == "" {
+			log.Fatal("searchParameter must specified in SearchByCountry")
+		} else {
+			results, err = n.FetchNews("ByCountry", "", "1", "Italy")
+		}
+	case searchType == "Global":
+		results, err = n.FetchNews("Global", "", "1", "")
+	default:
+		log.Fatal("Search type Must be specified. Allowed values: 'Global', 'ByCountry'")
+	}
 
 	if err != nil {
 		log.Fatal("Error retrieving news => ", err)
@@ -39,20 +63,6 @@ func main() {
 
 	log.Println("Iterating on Articles.")
 
-	// Printing News Articles (to be commented)
-	/*
-		for _, newsArticle := range results.Articles {
-			fmt.Printf("Source ID: %v\n", newsArticle.Source.ID)
-			fmt.Printf("Source Name: %v\n", newsArticle.Source.Name)
-			fmt.Printf("Author: %s\n", newsArticle.Author)
-			fmt.Printf("Title: %s\n", newsArticle.Title)
-			fmt.Printf("Description: %s\n", newsArticle.Description)
-			fmt.Printf("URL: %s\n", newsArticle.URL)
-			fmt.Printf("URLToImage: %s\n", newsArticle.URLToImage)
-			fmt.Printf("PublishedAt: %v\n", newsArticle.PublishedAt)
-			fmt.Printf("Content: %s\n", newsArticle.Content)
-		}
-	*/
 	/* ** write news to db ** */
 	myDB := data.NewDbConnector(db_host, db_port, db_name, db_user, db_password)
 
@@ -67,25 +77,6 @@ func main() {
 		defer myDB.Close()
 	}
 
-	// manual inserts
-	//sourceID := InsertSource(myDB, "Repubblica.it")
-	//InsertArticle(myDB, sourceID, "dummy author", "dummy title", "dummy description", "https://sadsa.xsa", "https://sas.org/image.jpg", t, "dummy content")
-
-	// --test timestamp native --
-	/*
-		layout := "2021-09-18 16:45:18 +0000 UTC"
-		str := "2021-09-18 16:45:18 +0000 UTC"
-		t, err := time.Parse(layout, str)
-	*/
-	/* -- test timestamp github.com/araddon/dateparse --
-	t, err := dateparse.ParseAny("2021-09-18 16:45:18 +0000 UTC")
-	if err != nil {
-		log.Fatal("Error parsing the Timestamp => ", err)
-	}
-
-	fmt.Println("Test Timestamp: ", t)
-
-	*/
 }
 
 func getEnv() map[string]string {

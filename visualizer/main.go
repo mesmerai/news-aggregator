@@ -88,6 +88,8 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 	// some vars declared
 	var err error
+	var results *data.Results
+	var count int
 	//results := &data.Results{}
 
 	// log the request
@@ -103,8 +105,27 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	params := u.Query()
 	searchQuery := params.Get("q")
 	page := params.Get("page")
+	limit := params.Get("limit")
+	country := params.Get("country")
+
+	// set defaults if param is missing
 	if page == "" {
 		page = "1"
+	}
+
+	if limit == "" {
+		limit = "100"
+	}
+
+	if country == "" {
+		country = "Global"
+	}
+
+	// convert to int some params
+	limitToInt, err := strconv.Atoi(limit)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	pageToInt, err := strconv.Atoi(page)
@@ -122,13 +143,28 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 		offset = (page * limit) - limit
 	*/
-	limit := 10
-	offset := (pageToInt * limit) - limit
-	results := myDB.GetArticles(limit, offset)
-	count := myDB.GetArticlesCount()
+	//limit := 100
+	offset := (pageToInt * limitToInt) - limitToInt
 
-	results.TotalResults = count
+	// call Global Search
+	switch {
+	case country == "Global":
+		if searchQuery == "" {
+			count = myDB.GetArticlesCount()
+			results = myDB.GetArticles(limitToInt, offset)
+		} else {
+			count = myDB.GetArticlesByNameCount(searchQuery)
+			results = myDB.GetArticlesByName(limitToInt, offset, searchQuery)
+		}
 
+		results.TotalResults = count
+	case country == "Australia":
+		// to be defined
+	case country == "Italy":
+		// to be defined
+	default:
+
+	}
 	// we convert page into int first
 	nextPage, err := strconv.Atoi(page)
 	if err != nil {
@@ -138,11 +174,11 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 	// calculate total pages
 	var tot int
-	mod := results.TotalResults % limit
+	mod := results.TotalResults % limitToInt
 	if mod == 0 {
-		tot = results.TotalResults / limit
+		tot = results.TotalResults / limitToInt
 	} else {
-		tot = (results.TotalResults / limit) + 1
+		tot = (results.TotalResults / limitToInt) + 1
 	}
 
 	// We save our results into the Search struct defined above

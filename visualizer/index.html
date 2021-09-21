@@ -10,25 +10,15 @@
 <body>
   <main>
     <header>
-      <a class="logo" href="/">News App</a>
+      <a class="logo" href="/">News Aggregator</a>
       <form action="/search" method="GET">
-        <p>Global Search
-        </p>
-        <input
-          autofocus
-          class="search-input"
-          placeholder="Type word or leave empty for all"
-          type="search"
-          name="q"
-        />
-        <input class="search-button" type="submit" value="Search">
-      </form>
-      <form action="/searchByCountry" method="GET">
-        <p>Search per Country:  
-        <input type="radio" name="country" value="Australia"/>
-        <label for="html"> 🇦🇺 Australia</label>
-        <input type="radio" name="country" value="Italy"/>
-        <label for="html"> 🇮🇹 Italy</label>
+        <p>Search:
+          <input type="radio" name="country" value="Global"/>
+          <label for="html"> 🌍 Global</label>
+          <input type="radio" name="country" value="Australia"/>
+          <label for="html"> 🇦🇺 Australia</label>
+          <input type="radio" name="country" value="Italy"/>
+          <label for="html"> 🇮🇹 Italy</label>
         </p>
         <input
           autofocus
@@ -64,8 +54,8 @@
             </a>
             <p class="description">{{ .Description }}</p>
             <div class="metadata">
-              <p class="source">{{ .Source }}</p>
-              <time class="published-date">{{ .FormatPublishedDate }}</time>
+              <p> {{ .FormatPublishedDate }}</p>
+              <p class="source">{{ .Source }} - {{ .Domain }}</p>
             </div>
           </div>
           <img class="article-image" src="{{ .URLToImage }}" />

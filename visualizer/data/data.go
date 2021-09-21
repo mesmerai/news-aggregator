@@ -99,6 +99,64 @@ func (db *DBClient) GetArticlesCount() int {
 
 }
 
+func (db *DBClient) GetArticlesByNameCount(word string) int {
+	log.Printf("Initiate GetArticlesByNameCount")
+
+	var id = 0
+	var selectRow *sql.Row
+	var selectErr error
+
+	sqlSelect := `SELECT COUNT(*) FROM articles 
+	WHERE title ILIKE '%'||$1||'%' OR content ILIKE '%'||$1||'%'`
+
+	// QueryRow returns a *Row
+	selectRow = db.Database.QueryRow(sqlSelect, word)
+	selectErr = selectRow.Scan(&id)
+	if selectErr != nil {
+		log.Fatal("Error on SQL SELECT => ", selectErr)
+	}
+
+	return id
+
+}
+
+func (db *DBClient) GetArticlesByName(limit, offset int, word string) *Results {
+
+	log.Printf("Initiate GetArticlesByName")
+
+	res := &Results{}
+
+	var selectRows *sql.Rows
+	var selectErr error
+	sqlSelect := ""
+
+	sqlSelect = `SELECT a.id, s.name, d.name, a.author, a.title, a.description, 
+	a.url, a.url_to_image, a.published_at, a.content, a.country, a.language, a.category 
+	FROM articles a, sources s, domains d 
+	WHERE (a.source_id = s.id AND a.domain_id = d.id) 
+	AND (title ILIKE '%'||$3||'%' OR content ILIKE  '%'||$3||'%') 
+	ORDER BY published_at 
+	DESC LIMIT $1 OFFSET $2 `
+
+	selectRows, selectErr = db.Database.Query(sqlSelect, limit, offset, word)
+	if selectErr != nil {
+		log.Fatal("Error on SQL SELECT => ", selectErr)
+	}
+
+	for selectRows.Next() {
+		var a Article
+		err := selectRows.Scan(&a.ID, &a.Source, &a.Domain, &a.Author, &a.Title, &a.Description, &a.URL, &a.URLToImage, &a.PublishedAt, &a.Content, &a.Country, &a.Content, &a.Category)
+		if err != nil {
+			log.Fatal("Error on reading SQL SELECT results => ", err)
+		}
+
+		res.Articles = append(res.Articles, a)
+	}
+
+	return res
+
+}
+
 func (db *DBClient) GetArticles(limit, offset int) *Results {
 
 	log.Printf("Initiate GetArticles")
@@ -110,7 +168,7 @@ func (db *DBClient) GetArticles(limit, offset int) *Results {
 	var selectErr error
 	sqlSelect := ""
 
-	sqlSelect = "SELECT * FROM articles LIMIT $1 OFFSET $2"
+	sqlSelect = "SELECT a.id, s.name, d.name, a.author, a.title, a.description, a.url, a.url_to_image, a.published_at, a.content, a.country, a.language, a.category FROM articles a, sources s, domains d WHERE a.source_id = s.id AND a.domain_id = d.id ORDER BY published_at DESC LIMIT $1 OFFSET $2 "
 
 	selectRows, selectErr = db.Database.Query(sqlSelect, limit, offset)
 	if selectErr != nil {

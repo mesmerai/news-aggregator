@@ -4,18 +4,27 @@ import (
 	"bytes"
 	"html/template"
 	"log"
-	"math"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
-	"time"
 
-	"github.com/mesmerai/news-aggregator/visualizer/news"
+	_ "github.com/lib/pq"
+	"github.com/mesmerai/news-aggregator/visualizer/data"
 )
 
-// Only needed with * Approach 1 * to make newsapi accessible to SearchHandler
-//var newsapi *news.Client
+// DB Conn Vars
+var environment = getEnv()
+var db_host string = "localhost"
+var db_port int = 5432
+var db_name string = "news"
+var db_user string = "news_db_user"
+
+// Secrets from ENV
+var db_password = environment["db_password"]
+
+//DB
+var myDB *data.DBClient
 
 // Loading HTML Template from file. Will will panic if error is not-nil.
 var tmpl = template.Must(template.ParseFiles("./index.html"))
@@ -25,7 +34,7 @@ type Search struct {
 	Query      string
 	NextPage   int
 	TotalPages int
-	Results    *news.Results
+	Results    *data.Results
 }
 
 // determine if it's LastPage to set the 'Next' button
@@ -75,115 +84,110 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	- it makes testing much easier
 	- limits the function's scope
 */
-func searchHandler(newsapi *news.Client, searchType string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func searchHandler(w http.ResponseWriter, r *http.Request) {
 
-		// some vars declared
-		var err error
-		country := ""
-		results := &news.Results{}
+	// some vars declared
+	var err error
+	//results := &data.Results{}
 
-		// log the request
-		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+	// log the request
+	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 
-		// Package url parses URLs and implements query escaping ==> http://localhost:8080/search?q=ciccio
-		u, err := url.Parse(r.URL.String())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		params := u.Query()
-		searchQuery := params.Get("q")
-		page := params.Get("page")
-		if page == "" {
-			page = "1"
-		}
-
-		//fmt.Println("Search Query: ", searchQuery)
-		//fmt.Println("Page: ", page)
-
-		if searchType == "searchGlobal" {
-			// the Global search returns error in the APi if "q" is not set as the scope of your search is too broad
-			if searchQuery == "" {
-				log.Fatal("Scope of the search is too broad, must specify a keyword.")
-			}
-			results, err = newsapi.FetchNews(searchQuery, page, "")
-		}
-		if searchType == "searchByCountry" {
-			// the searchByCountry returns error in the API if "country" is not set
-			country = params.Get("country")
-			if country == "" {
-				log.Fatal("Country must specified in SearchByCountry.")
-			}
-			results, err = newsapi.FetchNews(searchQuery, page, country)
-		}
-
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// Printing the Results from the Search, the whole struct
-		// %v	the value in a default format
-		// when printing structs, the plus flag (%+v) adds field names
-		//fmt.Printf("%+v", results)
-
-		// we convert page into int first
-		nextPage, err := strconv.Atoi(page)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// We save our results into the Search struct defined above
-		// so that we can use it for Pagination
-		search := &Search{
-			Query:      searchQuery,
-			NextPage:   nextPage,
-			TotalPages: int(math.Ceil(float64(results.TotalResults) / float64(newsapi.PageSize))), //rounding the result up to the nearest integer, used later for pagination
-			Results:    results,
-		}
-
-		// this block is to increment NextPage
-		if !search.IsLastPage() {
-			search.NextPage++
-		}
-
-		// Intermediatie empty byte buffer where the Template is execute first to check errors
-		// a Buffer is a struct and needs no initialization - ref. https://pkg.go.dev/bytes#Buffer
-		buffer := &bytes.Buffer{}
-
-		// We write the template to to the empty byte.Buffer passing the the 'search' data object
-		// func (t *Template) Execute(wr io.Writer, data interface{}) error
-		// Execute applies a parsed template to the specified data object, writing the output to wr.
-		// If an error occurs executing the template or writing its output, execution stops, but partial results may already have been written to the output writer.
-		err = tmpl.Execute(buffer, search)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// Then the buffer is written to the ResponseWriter
-		// func (r *Reader) WriteTo(w io.Writer) (n int64, err error)
-		buffer.WriteTo(w)
-
-	}
-}
-
-func getApiKeyFromEnv() string {
-	news_api_key := os.Getenv("NEWS_API_KEY")
-	if news_api_key == "" {
-		log.Fatal("News Api Key is not set in ENV.")
+	// Package url parses URLs and implements query escaping ==> http://localhost:8080/search?q=ciccio
+	u, err := url.Parse(r.URL.String())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	return news_api_key
+	params := u.Query()
+	searchQuery := params.Get("q")
+	page := params.Get("page")
+	if page == "" {
+		page = "1"
+	}
+
+	pageToInt, err := strconv.Atoi(page)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// GetArticles(limit, offset)
+	/*
+		page=1 > limit 100 offset 0
+		page=2 > limit 100 offset 100
+		page=3 > limit 100 offset 200
+		page=4 > limit 100 offset 300
+
+		offset = (page * limit) - limit
+	*/
+	limit := 10
+	offset := (pageToInt * limit) - limit
+	results := myDB.GetArticles(limit, offset)
+	count := myDB.GetArticlesCount()
+
+	results.TotalResults = count
+
+	// we convert page into int first
+	nextPage, err := strconv.Atoi(page)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// calculate total pages
+	var tot int
+	mod := results.TotalResults % limit
+	if mod == 0 {
+		tot = results.TotalResults / limit
+	} else {
+		tot = (results.TotalResults / limit) + 1
+	}
+
+	// We save our results into the Search struct defined above
+	// so that we can use it for Pagination
+	search := &Search{
+		Query:      searchQuery,
+		NextPage:   nextPage,
+		TotalPages: tot,
+		Results:    results,
+	}
+
+	// this block is to increment NextPage
+	if !search.IsLastPage() {
+		search.NextPage++
+	}
+
+	// Intermediatie empty byte buffer where the Template is execute first to check errors
+	// a Buffer is a struct and needs no initialization - ref. https://pkg.go.dev/bytes#Buffer
+	buffer := &bytes.Buffer{}
+
+	// We write the template to to the empty byte.Buffer passing the the 'search' data object
+	// func (t *Template) Execute(wr io.Writer, data interface{}) error
+	// Execute applies a parsed template to the specified data object, writing the output to wr.
+	// If an error occurs executing the template or writing its output, execution stops, but partial results may already have been written to the output writer.
+	err = tmpl.Execute(buffer, search)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Then the buffer is written to the ResponseWriter
+	// func (r *Reader) WriteTo(w io.Writer) (n int64, err error)
+	buffer.WriteTo(w)
+
 }
 
 func main() {
-	news_api_key := getApiKeyFromEnv()
-	myClient := &http.Client{Timeout: 10 * time.Second}
-	newsapi := news.NewClient(myClient, news_api_key, 20)
+
+	/* ** DB Conn ** */
+	myDB = data.NewDBClient(db_host, db_port, db_name, db_user, db_password)
+
+	// myDB = *DBClient(db_conn)
+	defer myDB.Database.Close()
+
+	log.Println("Closing DB resources.")
 
 	// to handle static files (like our assets/style.css) we need to:
 	// - instantiate a FileServer object with the folder of the static files
@@ -204,8 +208,8 @@ func main() {
 
 	// handler for /search
 	// ** Closure over newsapi parameter
-	mux.HandleFunc("/search", searchHandler(newsapi, "searchGlobal"))
-	mux.HandleFunc("/searchByCountry", searchHandler(newsapi, "searchByCountry"))
+	mux.HandleFunc("/search", searchHandler)
+	//mux.HandleFunc("/searchByCountry", searchHandler(newsapi, "searchByCountry"))
 
 	// searchNews by Country
 	//mux.HandleFunc("/searchByCountry", searchByCountryHandler(newsapi))
@@ -213,4 +217,23 @@ func main() {
 	// ListenAndServe starts an HTTP server with a given address and handler.
 	// -- http://localhost:8080
 	http.ListenAndServe(":8080", mux)
+}
+
+func getEnv() map[string]string {
+
+	envMap := map[string]string{}
+
+	news_api_key := os.Getenv("NEWS_API_KEY")
+	if news_api_key == "" {
+		log.Fatal("News Api Key is not set in ENV.")
+	}
+	db_password := os.Getenv("DB_PASSWORD")
+	if db_password == "" {
+		log.Fatal("Password for the DB is not set in ENV.")
+	}
+
+	envMap["news_api_key"] = news_api_key
+	envMap["db_password"] = db_password
+
+	return envMap
 }

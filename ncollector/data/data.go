@@ -38,6 +38,48 @@ func NewDBClient(db_host string, db_port int, db_name string, db_user string, db
 
 }
 
+func (db *DBClient) GetDomainID(name string) int {
+
+	log.Printf("Initiate GetDomainID")
+
+	var id int
+	var selectRow *sql.Row
+	var selectErr error
+	sqlSelect := ""
+
+	sqlSelect = "SELECT id FROM domains WHERE name = $1"
+
+	selectRow = db.Database.QueryRow(sqlSelect, name)
+	selectErr = selectRow.Scan(&id)
+	if selectErr != nil {
+		log.Fatal("Error on SQL SELECT => ", selectErr)
+	}
+
+	log.Printf("Domain ID for '%s' is: ", name)
+
+	return id
+
+}
+
+func (db *DBClient) GetDomains() *sql.Rows {
+
+	log.Printf("Initiate GetDomains")
+
+	var selectRows *sql.Rows
+	var selectErr error
+	sqlSelect := ""
+
+	sqlSelect = "SELECT * FROM domains"
+
+	selectRows, selectErr = db.Database.Query(sqlSelect)
+	if selectErr != nil {
+		log.Fatal("Error on SQL SELECT => ", selectErr)
+	}
+
+	return selectRows
+
+}
+
 func (db *DBClient) GetDomainsByName(name string) *sql.Rows {
 
 	log.Printf("Initiate GetDomainsByName")

@@ -61,8 +61,8 @@ func main() {
 	log.Println("Initiate News collection")
 	log.Println("==========================================================")
 
-	CountryFetchAndStore(myDB, newsapi, "Italy")
-	CountryFetchAndStore(myDB, newsapi, "Australia")
+	CountryFetchAndStore(myDB, newsapi, "Italy", "Italian")
+	CountryFetchAndStore(myDB, newsapi, "Australia", "English")
 	GlobalFetchAndStore(myDB, newsapi)
 
 }
@@ -147,7 +147,7 @@ func GlobalFetchAndStore(myDB *data.DBClient, newsapi *news.Client) {
 
 }
 
-func CountryFetchAndStore(myDB *data.DBClient, newsapi *news.Client, country string) {
+func CountryFetchAndStore(myDB *data.DBClient, newsapi *news.Client, country, language string) {
 
 	/* ********** Start with Italy ***************************************** */
 	log.Println("**********************************************************")
@@ -254,7 +254,7 @@ func CountryFetchAndStore(myDB *data.DBClient, newsapi *news.Client, country str
 		}
 
 		/* ** InsertArticle ** */
-		myDB.InsertArticle(sourceID, domainID, newsArticle.Author, newsArticle.Title, newsArticle.Description, newsArticle.URL, newsArticle.URLToImage, newsArticle.PublishedAt, newsArticle.Content, "", "", "")
+		myDB.InsertArticle(sourceID, domainID, newsArticle.Author, newsArticle.Title, newsArticle.Description, newsArticle.URL, newsArticle.URLToImage, newsArticle.PublishedAt, newsArticle.Content, country, language, "")
 
 		log.Println("--------------------------------------------------------")
 

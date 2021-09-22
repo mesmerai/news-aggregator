@@ -12,13 +12,13 @@
     <header>
       <a class="logo" href="/">News Aggregator</a>
       <form action="/search" method="GET">
-        <p>Search:
-          <input type="radio" name="country" value="Global"/>
-          <label for="html"> 🌍 Global</label>
-          <input type="radio" name="country" value="Australia"/>
-          <label for="html"> 🇦🇺 Australia</label>
-          <input type="radio" name="country" value="Italy"/>
-          <label for="html"> 🇮🇹 Italy</label>
+        <p> 
+          Search Country:  
+          <select name="country">
+            <option value="Global">🌍 Global</option>
+            <option value="Australia">🇦🇺 Australia</option>
+            <option value="Italy">🇮🇹 Italy</option>
+          </select>
         </p>
         <input
           autofocus

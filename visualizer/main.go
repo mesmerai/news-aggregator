@@ -150,16 +150,24 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case country == "Global":
 		if searchQuery == "" {
-			count = myDB.GetArticlesCount()
-			results = myDB.GetArticles(limitToInt, offset)
+			count = myDB.CountArticles("")
+			results = myDB.GetArticles(limitToInt, offset, "")
 		} else {
-			count = myDB.GetArticlesByNameCount(searchQuery)
-			results = myDB.GetArticlesByName(limitToInt, offset, searchQuery)
+			count = myDB.CountArticles(searchQuery)
+			results = myDB.GetArticles(limitToInt, offset, searchQuery)
 		}
 
 		results.TotalResults = count
 	case country == "Australia":
-		// to be defined
+		if searchQuery == "" {
+			// to be defined
+			//count = myDB.CountArticlesByCountry(country)
+			//results = myDB.GetArticlesByCountry(limitToInt, offset, country)
+		} else {
+			// to be defined
+			//count = myDB.CountArticlesByCountry(country)
+			//results = myDB.GetArticlesByCountry(limitToInt, offset, country)
+		}
 	case country == "Italy":
 		// to be defined
 	default:

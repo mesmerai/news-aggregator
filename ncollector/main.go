@@ -61,12 +61,15 @@ func main() {
 	log.Println("Initiate News collection")
 	log.Println("==========================================================")
 
-	//CountryFetchAndStore(myDB, newsapi, "Italy", "Italian")
-	//CountryFetchAndStore(myDB, newsapi, "Australia", "English")
+	// first two functions retrieve news by country, then populate sources and domains
+	CountryFetchAndStore(myDB, newsapi, "Italy", "Italian")
+	CountryFetchAndStore(myDB, newsapi, "Australia", "English")
 
+	// this second function query domains from DB given a restricted list, then get news for those domains
 	// modified to work on a restricted list of domains
 	// otherwise reach the LIMIT of 50 API calls in 12 hours
-	dList := []string{"corriere.it", "ansa.it"}
+	// restricted list of domains REQUIRED to not reach the API call daily LIMIT
+	dList := []string{"corriere.it", "ansa.it", "rainews.it"}
 	GlobalFetchAndStore(myDB, newsapi, dList)
 
 }

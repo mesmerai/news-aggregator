@@ -156,20 +156,29 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 			count = myDB.CountArticles(searchQuery)
 			results = myDB.GetArticles(limitToInt, offset, searchQuery)
 		}
-
 		results.TotalResults = count
 	case country == "Australia":
 		if searchQuery == "" {
 			// to be defined
-			//count = myDB.CountArticlesByCountry(country)
-			//results = myDB.GetArticlesByCountry(limitToInt, offset, country)
+			count = myDB.CountArticlesByCountry(country, "")
+			results = myDB.GetArticlesByCountry(limitToInt, offset, country, "")
 		} else {
 			// to be defined
-			//count = myDB.CountArticlesByCountry(country)
-			//results = myDB.GetArticlesByCountry(limitToInt, offset, country)
+			count = myDB.CountArticlesByCountry(country, searchQuery)
+			results = myDB.GetArticlesByCountry(limitToInt, offset, country, searchQuery)
 		}
+		results.TotalResults = count
 	case country == "Italy":
-		// to be defined
+		if searchQuery == "" {
+			// to be defined
+			count = myDB.CountArticlesByCountry(country, "")
+			results = myDB.GetArticlesByCountry(limitToInt, offset, country, "")
+		} else {
+			// to be defined
+			count = myDB.CountArticlesByCountry(country, searchQuery)
+			results = myDB.GetArticlesByCountry(limitToInt, offset, country, searchQuery)
+		}
+		results.TotalResults = count
 	default:
 
 	}

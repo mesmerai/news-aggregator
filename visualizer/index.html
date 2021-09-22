@@ -14,7 +14,7 @@
       <form action="/search" method="GET">
         <p> 
           Search Country:  
-          <select name="country">
+          <select class="search-button" name="country">
             <option value="Global">🌍 Global</option>
             <option value="Australia">🇦🇺 Australia</option>
             <option value="Italy">🇮🇹 Italy</option>
@@ -31,7 +31,65 @@
       </form>
       <a href="https://github.com/mesmerai/news-aggregator" class="button github-button">View on GitHub</a>
     </header>
-    <section class="container">
+    <div class="row">
+      <div class="column left">
+        <div class="window">
+          <p>
+            <b>Favourite Feeds</b>
+          </p>
+          <form action="/save" method="GET">
+            <input checked type="checkbox" name="domain1" value="rainews.it">
+            <label for="domain1">rainews.it</label><br> 
+            <input checked type="checkbox" name="domain2" value="corriere.it">
+            <label for="domain2">corriere.it</label><br> 
+            <input checked type="checkbox" name="domain3" value="ansa.it">
+            <label for="domain3"></label>ansa.it</label><br> <br>
+            <p>
+              <input class="search-button" type="submit" value="Save">
+              <a href="./manage?" class="button github-button">Manage</a>
+            </p>
+          </form>
+        </div>
+        <!-- to be create with JS when click on Manage Button-->
+ 
+        <div class="window">
+            <p>
+              <b>Add Feeds to Favourites</b>
+            </p>
+            
+            <form action="/add" method="GET">
+                <input type="checkbox" name="domain100" value="repubblica.it">
+                <label for="domain1">repubblica.it</label><br> 
+                <input type="checkbox" name="domain200" value="smh.com.au">
+                <label for="domain2">smh.com.au</label><br> 
+                <input type="checkbox" name="domain300" value="lastampa.it">
+                <label for="domain3"></label>lastampa.it</label><br> 
+                <input type="checkbox" name="domain300" value="arstechnica.com                ">
+                <label for="domain3"></label>arstechnica.com</label><br> 
+                <input type="checkbox" name="domain300" value="arstechnica.com                ">
+                <label for="domain3"></label>arstechnica.com</label><br> 
+                <input type="checkbox" name="domain100" value="abc.net.au">
+                <label for="domain1">abc.net.au</label><br> 
+                <input type="checkbox" name="domain200" value="internazionale.it">
+                <label for="domain2">internazionale.it</label><br> 
+                <input type="checkbox" name="domain300" value="itnews.com.au">
+                <label for="domain3"></label>itnews.com.au</label><br>
+              <p>
+                <input class="search-button" type="submit" value="Add">
+                <a href="./add?" class="button github-button">Add</a>
+              </p>
+             </form>
+            
+        </div>  
+
+ 
+
+
+
+      </div>
+
+      <div class="column middle">
+        <section class="container">
       <div class="result-count">
         {{ if .Results }}
           {{ if (gt .Results.TotalResults 0)}}
@@ -76,7 +134,13 @@
           {{ end }}
         {{ end }}
         </div>
-    </section>
+        </section>
+      </div>
+      <div class="column right">
+        <p>Column Right</p>
+        <p> ..</p>
+      </div>
+  </div>
   </main>
 </body>
 </html>

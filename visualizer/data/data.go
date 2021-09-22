@@ -106,6 +106,33 @@ func (db *DBClient) CountArticles(word string) int {
 
 }
 
+func (db *DBClient) CountArticlesByCountry(country, word string) int {
+	log.Printf("Initiate CountArticlesByCountry")
+
+	var id = 0
+	var selectRow *sql.Row
+	var selectErr error
+
+	if word == "" {
+		sqlSelect := `SELECT COUNT(*) FROM articles WHERE country = $1`
+		// QueryRow returns a *Row
+		selectRow = db.Database.QueryRow(sqlSelect, country)
+	} else {
+		sqlSelect := `SELECT COUNT(*) FROM articles 
+		WHERE country = $1 AND (title ILIKE '%'||$2||'%' OR content ILIKE '%'||$2||'%')`
+		// QueryRow returns a *Row
+		selectRow = db.Database.QueryRow(sqlSelect, country, word)
+	}
+
+	selectErr = selectRow.Scan(&id)
+	if selectErr != nil {
+		log.Fatal("Error on SQL SELECT => ", selectErr)
+	}
+
+	return id
+
+}
+
 func (db *DBClient) GetArticles(limit, offset int, word string) *Results {
 
 	log.Printf("Initiate GetArticles")
@@ -134,7 +161,7 @@ func (db *DBClient) GetArticles(limit, offset int, word string) *Results {
 		a.url, a.url_to_image, a.published_at, a.content, a.country, a.language, a.category 
 		FROM articles a, sources s, domains d 
 		WHERE (a.source_id = s.id AND a.domain_id = d.id) 
-		AND (title ILIKE '%'||$3||'%' OR content ILIKE  '%'||$3||'%') 
+		AND (title ILIKE '%'||$3||'%' OR description ILIKE  '%'||$3||'%' OR content ILIKE  '%'||$3||'%') 
 		ORDER BY published_at 
 		DESC LIMIT $1 OFFSET $2 `
 
@@ -167,6 +194,62 @@ func (db *DBClient) GetArticles(limit, offset int, word string) *Results {
 	*/
 
 	//res.TotalResults = 123
+	return res
+
+}
+
+func (db *DBClient) GetArticlesByCountry(limit, offset int, country, word string) *Results {
+
+	log.Printf("Initiate GetArticlesByCountry")
+
+	//articles := []Article{}
+	res := &Results{}
+
+	var selectRows *sql.Rows
+	var selectErr error
+	sqlSelect := ""
+
+	if word == "" {
+
+		sqlSelect = `SELECT a.id, s.name, d.name, a.author, a.title, a.description, 
+		a.url, a.url_to_image, a.published_at, a.content, a.country, a.language, a.category 
+		FROM articles a, sources s, domains d 
+		WHERE a.source_id = s.id AND a.domain_id = d.id 
+		AND country = $3
+		ORDER BY published_at 
+		DESC LIMIT $1 OFFSET $2 `
+
+		selectRows, selectErr = db.Database.Query(sqlSelect, limit, offset, country)
+
+	} else {
+
+		sqlSelect = `SELECT a.id, s.name, d.name, a.author, a.title, a.description, 
+		a.url, a.url_to_image, a.published_at, a.content, a.country, a.language, a.category 
+		FROM articles a, sources s, domains d 
+		WHERE a.source_id = s.id AND a.domain_id = d.id 
+		AND country = $3
+		AND (title ILIKE '%'||$4||'%' OR description ILIKE '%'||$4||'%' OR content ILIKE '%'||$4||'%') 
+		ORDER BY published_at 
+		DESC LIMIT $1 OFFSET $2 `
+
+		selectRows, selectErr = db.Database.Query(sqlSelect, limit, offset, country, word)
+
+	}
+
+	if selectErr != nil {
+		log.Fatal("Error on SQL SELECT => ", selectErr)
+	}
+
+	for selectRows.Next() {
+		var a Article
+		err := selectRows.Scan(&a.ID, &a.Source, &a.Domain, &a.Author, &a.Title, &a.Description, &a.URL, &a.URLToImage, &a.PublishedAt, &a.Content, &a.Country, &a.Content, &a.Category)
+		if err != nil {
+			log.Fatal("Error on reading SQL SELECT results => ", err)
+		}
+
+		res.Articles = append(res.Articles, a)
+	}
+
 	return res
 
 }

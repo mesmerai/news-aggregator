@@ -2,6 +2,62 @@ html {
   box-sizing: border-box;
 }
 
+.feeds {
+  background-color: rgb(138, 212, 52);
+  float: left;
+  padding: 10px 10px; 
+  height: 100px; 
+}
+
+.lfeeds {
+  background-color: rgb(241, 197, 197);
+  width: 50%;
+}
+
+.rfeeds {
+  background-color: rgb(107, 93, 93);
+  width: 50%;
+}
+
+
+
+
+/* Create three equal columns that floats next to each other */
+.column {
+  background-color: rgb(224, 230, 217);
+  float: left;
+  padding: 120px 50px; 
+  height: 300px; 
+ 
+}
+
+.left {
+  background-color: white;
+  width: 25%;
+ 
+}
+
+.middle {
+  background-color: white;
+  width: 50%;
+
+}
+
+.right {
+  background-color: white;
+  width: 25%;
+
+}
+
+
+/* Clear floats after the columns
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+ */
+
 *, *::before, *::after {
   box-sizing: inherit;
   margin: 0;
@@ -97,8 +153,15 @@ form {
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
+  padding: 0px 0px 30px 0px;
+  /*display: flex*/
+}
+
+.left-container {
+  width: 100%;
+  max-width: 120px;
+  margin: 0 auto;
   padding: 100px 0px 30px 0px
-  /*padding: 80px 20px 40px;*/
 }
 
 .result-count {
@@ -120,6 +183,15 @@ form {
   border-radius: 4px;
   justify-content: space-between;
 }
+
+.window {
+  margin-bottom: 30px;
+  border: 1px solid var(--light-grey);
+  padding: 15px;
+  border-radius: 4px;
+}
+
+
 
 .article-image {
   width: 200px;

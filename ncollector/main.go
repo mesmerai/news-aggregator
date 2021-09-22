@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -62,105 +61,20 @@ func main() {
 	log.Println("Initiate News collection")
 	log.Println("==========================================================")
 
-	CountryFetchAndStore(myDB, newsapi, "Italy", "Italian")
-	CountryFetchAndStore(myDB, newsapi, "Australia", "English")
-	GlobalFetchAndStore(myDB, newsapi)
+	//CountryFetchAndStore(myDB, newsapi, "Italy", "Italian")
+	//CountryFetchAndStore(myDB, newsapi, "Australia", "English")
 
-}
-
-// API call for all domains together - LIMIT on 100 results max only (for the first domain in the list)
-func GlobalFetchAndStore2(myDB *data.DBClient, newsapi *news.Client) {
-
-	domainRows := myDB.GetDomains()
-
-	domains := make([]string, 0)
-	var s, dList string
-
-	for domainRows.Next() {
-
-		// Scan copies the columns in the current row into the values pointed at by dest.
-		// The number of values in dest must be the same as the number of columns in Rows.
-		err := domainRows.Scan(&thisDomain.id, &thisDomain.name)
-		if err != nil {
-			log.Fatal("Error on reading SQL SELECT results => ", err)
-		}
-
-		// create listOfDomains as CSV list to use it with one single API call later
-		domains = append(domains, thisDomain.name)
-		s = fmt.Sprint(s + thisDomain.name + ",")
-		dList = s[:len(s)-1]
-	}
-
-	if len(domains) != 0 {
-
-		//fmt.Println(dList)
-		log.Println("**********************************************************")
-		log.Println("Global For ByDomains: ", dList)
-		log.Println("**********************************************************")
-
-		results, err := newsapi.FetchNews("Global", "", "1", dList)
-		if err != nil {
-			log.Fatal("Error retrieving news => ", err)
-		}
-
-		log.Println("News collection completed.")
-		log.Printf("Total results retrieved for '%s': %v", dList, results.TotalResults)
-
-		log.Println("--------------------------------------------------------")
-		log.Println("Iterating on Articles.")
-		log.Println("--------------------------------------------------------")
-
-		for i, newsArticle := range results.Articles {
-			log.Printf(" >> Article #%d << | Title: '%s'", i+1, newsArticle.Title)
-
-			sources := make([]string, 0)
-
-			// exists for sure
-			domainID := myDB.GetDomainID(thisDomain.name)
-
-			sourceRows := myDB.GetSourcesByName(newsArticle.Source.Name)
-
-			for sourceRows.Next() {
-
-				// Scan copies the columns in the current row into the values pointed at by dest.
-				// The number of values in dest must be the same as the number of columns in Rows.
-				err := sourceRows.Scan(&thisSource.id, &thisSource.name)
-				if err != nil {
-					log.Fatal("Error on reading SQL SELECT results => ", err)
-				}
-				// fill the slice to check if there are rows later
-				sources = append(sources, thisSource.name)
-				log.Printf("Records found for source: '%s'", newsArticle.Source.Name)
-				log.Printf(" - rows.id: %d\n", thisSource.id)
-				log.Printf(" - rows.name: %s\n", thisSource.name)
-
-			}
-			log.Println("Closing rows resources.")
-			defer sourceRows.Close()
-
-			// the 'source' slide is empty if no rows are returned by the SELECT
-			if len(sources) == 0 {
-				log.Printf("No sources found for '%s'. Proceed with INSERT.", newsArticle.Source.Name)
-
-				sourceID = myDB.InsertSource(newsArticle.Source.Name)
-			} else {
-				log.Println("The source already exists. No INSERT required.")
-				sourceID = thisSource.id
-			}
-
-			myDB.InsertArticle(sourceID, domainID, newsArticle.Author, newsArticle.Title, newsArticle.Description, newsArticle.URL, newsArticle.URLToImage, newsArticle.PublishedAt, newsArticle.Content, "", "", "")
-
-			log.Println("--------------------------------------------------------")
-
-		}
-	}
+	// modified to work on a restricted list of domains
+	// otherwise reach the LIMIT of 50 API calls in 12 hours
+	dList := []string{"corriere.it", "ansa.it"}
+	GlobalFetchAndStore(myDB, newsapi, dList)
 
 }
 
 // API call for each domain - LIMIT per Dev plan reached at 50 calls in 12 hours
-func GlobalFetchAndStore(myDB *data.DBClient, newsapi *news.Client) {
+func GlobalFetchAndStore(myDB *data.DBClient, newsapi *news.Client, domainsList []string) {
 
-	domainRows := myDB.GetDomains()
+	domainRows := myDB.GetDomains(domainsList)
 
 	for domainRows.Next() {
 

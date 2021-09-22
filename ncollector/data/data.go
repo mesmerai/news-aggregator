@@ -1,6 +1,7 @@
 package data
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	"log"
@@ -61,17 +62,26 @@ func (db *DBClient) GetDomainID(name string) int {
 
 }
 
-func (db *DBClient) GetDomains() *sql.Rows {
+func (db *DBClient) GetDomains(filter []string) *sql.Rows {
 
 	log.Printf("Initiate GetDomains")
 
 	var selectRows *sql.Rows
 	var selectErr error
-	sqlSelect := ""
+	//sqlSelect := ""
 
-	sqlSelect = "SELECT * FROM domains"
+	buf := bytes.NewBufferString("SELECT * FROM domains WHERE name in ('")
+	for i, dName := range filter {
+		if i > 0 {
+			buf.WriteString("','")
+		}
+		buf.WriteString(dName)
+	}
+	buf.WriteString("')")
 
-	selectRows, selectErr = db.Database.Query(sqlSelect)
+	fmt.Println("SQL: ", buf.String())
+
+	selectRows, selectErr = db.Database.Query(buf.String())
 	if selectErr != nil {
 		log.Fatal("Error on SQL SELECT => ", selectErr)
 	}

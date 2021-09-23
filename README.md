@@ -43,6 +43,7 @@ export DB_PASSWORD="<postgres-db-password-here>
 Build the image from the ```db/Dockerfile```:
 ```
 $ sudo docker build -t mesmerai/news-postgres db
+
 ```
 
 Run the image passing the POSTGRES_PASSWORD as parameter:
@@ -80,8 +81,10 @@ news=# \d
 
 ## Start ncollector Docker image
 
+Build the image from ncollector/Dockerfile:
+
 ```
-$ sudo docker build -t mesmerai/ncollector ncollector
+$ sudo docker build --build-arg NEWS_API_KEY=<news-api-key-here> --build-arg DB_PASSWORD=<db-password-here> -t mesmerai/ncollector ncollector
 ```
 
 
@@ -92,6 +95,8 @@ $ sudo docker build -t mesmerai/ncollector ncollector
 ```
 -- list containers
 $ sudo docker ps -all
+$ sudo docker container ls -a
+
 -- stop container
 $ sudo docker stop <container-id>
 -- remove container

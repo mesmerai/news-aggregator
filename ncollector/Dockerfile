@@ -1,12 +1,18 @@
-FROM golang:1.16-alpine
-WORKDIR /app
-COPY go.mod ./
-COPY go.sum ./
-RUN go mod download
-RUN go get github.com/mesmerai/news-aggregator/ncollector/data
-RUN go get github.com/mesmerai/news-aggregator/ncollector/news
+FROM golang:1.17
 
-COPY *.go ./
+ARG NEWS_API_KEY=local
+ENV NEWS_API_KEY ${NEWS_API_KEY}
+
+ARG DB_PASSWORD=local
+ENV DB_PASSWORD ${DB_PASSWORD}
+
+WORKDIR /app
+COPY . .
+
+RUN go mod download
+
 
 RUN go build -o /ncollector
 EXPOSE 8080
+
+CMD ["/ncollector"]

@@ -5,7 +5,7 @@ There are 2 microservices:
 ## ncollector 
 Service to fetch articles via News API and populate the DB.
 
-What it does:
+What it does/provides:
 - fetch of news ByCountry (Italy and Australia supported)
 - populate sources and domains in the DB
 - fetch of news Globally given a set of feeds
@@ -18,7 +18,7 @@ What it does:
 ## visualizer
 Service to provide a web interface for reading records store in the db.
 
-What it does:  
+What it does/provides:  
 - search of articles with/without keyword 
 - search articles per country: Italy, Australia or Global  
 - add/remove Favourite feeds from the menus on the left side (config saved in the DB)

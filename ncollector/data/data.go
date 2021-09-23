@@ -39,6 +39,25 @@ func NewDBClient(db_host string, db_port int, db_name string, db_user string, db
 
 }
 
+func (db *DBClient) GetFavourites() *sql.Rows {
+
+	log.Printf("Initiate GetFavourites")
+
+	var selectRows *sql.Rows
+	var selectErr error
+	sqlSelect := ""
+
+	sqlSelect = "SELECT * FROM domains WHERE favourite = TRUE"
+
+	selectRows, selectErr = db.Database.Query(sqlSelect)
+	if selectErr != nil {
+		log.Fatal("Error on SQL SELECT => ", selectErr)
+	}
+
+	return selectRows
+
+}
+
 func (db *DBClient) GetDomainID(name string) int {
 
 	log.Printf("Initiate GetDomainID")

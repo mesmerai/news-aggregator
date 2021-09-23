@@ -1,25 +1,31 @@
-# News Aggregator <WIP>
+# News Aggregator 
 
 There are 2 microservices:   
 
 ## ncollector 
 Service to fetch articles via News API and populate the DB.
 
-Features:
-- fetch news ByCountry (Italy and Australia supported)
+What it does:
+- fetch of news ByCountry (Italy and Australia supported)
 - populate sources and domains in the DB
-- fetch news Globally given a set of feeds
-- .. 
+- fetch of news Globally given a set of feeds
 
-> Feeds can be set as Favourite from the web ui from the user.  
-> There's a limit of 50 API requests every 6h as per NEWS API Dev(free) plan
-> Therefore, setting up a limited/restricted set of feeds limits the total number of API calls
+
+> Favourite Feeds can be set from the user via web ui (visualizer).  
+> NEWS API Dev(free) plan is limited to 50 API requests every 6h.  
+> It's recommended to set up a restricted set of feeds to limit the total number of API calls.
 
 ## visualizer
-Service that provides a web interface to search news with different filters:
-- add/remove Favourite feeds from the menus on the left side (save config to DB)
-- search articles per country: Italy, Australia or Global (search from DB)
+Service to provide a web interface for reading records store in the db.
 
+What it does:  
+- search of articles with/without keyword 
+- search articles per country: Italy, Australia or Global  
+- add/remove Favourite feeds from the menus on the left side (config saved in the DB)
+
+
+A that's how it looks like:  
+![News Aggregator](./images/news-aggregator.png)
 
 # Setup 
 

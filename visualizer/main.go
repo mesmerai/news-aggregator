@@ -83,6 +83,9 @@ to the connection as part of an HTTP response.
 */
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
+	// log the request
+	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+
 	// some vars declared
 	var err error
 	var favResults *data.FavouriteDomains
@@ -137,23 +140,65 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	//tmpl.Execute(w, nil)
 
 	//w.Write([]byte("<h1>Hello World!</h1>\n"))
-	// log the request
-	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+
 }
 
-/* * Approach 2 *
-   * Closure / Functions declared inside of functions are special; they are closures. *
+func addFeedsHandler(w http.ResponseWriter, r *http.Request) {
 
-	1. newsapi defined and assigned inside main
-	2. use a Closure to pass the newsapi inside searchHandler => mux.HandleFunc("/search", searchHandler(newsapi))
-	3. searchHandler function must be adjusted to include the Closure as per below
+	// some vars declared
+	var err error
 
-	searchHandler receive a Pointer to news.Client and return an anonymous function that satisfies the HandlerFunc
+	// log the request
+	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 
-	NOTE: This is potentially a better solution since:
-	- it makes testing much easier
-	- limits the function's scope
-*/
+	// Package url parses URLs and implements query escaping ==> http://localhost:8080/search?q=ciccio
+	u, err := url.Parse(r.URL.String())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	params := u.Query()
+	feeds := params["afeed"]
+
+	//fmt.Println(feeds)
+
+	myDB.SetFavourites(feeds)
+
+	// redirect to root
+	http.Redirect(w, r, "/", http.StatusMovedPermanently)
+
+}
+
+func saveFeedsHandler(w http.ResponseWriter, r *http.Request) {
+
+	// some vars declared
+	var err error
+
+	// log the request
+	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+
+	// Package url parses URLs and implements query escaping ==> http://localhost:8080/saveFeeds?feed=adnkronos.com&feed=ansa.it
+	u, err := url.Parse(r.URL.String())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	params := u.Query()
+	feeds := params["sfeed"]
+	//dList := make([]string, 0)
+
+	//fmt.Println(feeds)
+
+	myDB.ResetFavourites()
+	myDB.SetFavourites(feeds)
+
+	// redirect to root
+	http.Redirect(w, r, "/", http.StatusMovedPermanently)
+
+}
+
 func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 	// some vars declared
@@ -204,15 +249,6 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// GetArticles(limit, offset)
-	/*
-		page=1 > limit 100 offset 0
-		page=2 > limit 100 offset 100
-		page=3 > limit 100 offset 200
-		page=4 > limit 100 offset 300
-
-		offset = (page * limit) - limit
-	*/
 	//limit := 100
 	offset := (pageToInt * limitToInt) - limitToInt
 
@@ -341,10 +377,9 @@ func main() {
 	// handler for /search
 	// ** Closure over newsapi parameter
 	mux.HandleFunc("/search", searchHandler)
-	//mux.HandleFunc("/searchByCountry", searchHandler(newsapi, "searchByCountry"))
 
-	// searchNews by Country
-	//mux.HandleFunc("/searchByCountry", searchByCountryHandler(newsapi))
+	mux.HandleFunc("/addFeeds", addFeedsHandler)
+	mux.HandleFunc("/saveFeeds", saveFeedsHandler)
 
 	// ListenAndServe starts an HTTP server with a given address and handler.
 	// -- http://localhost:8080

@@ -1,6 +1,7 @@
 package data
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	"log"
@@ -88,6 +89,51 @@ func NewDBClient(db_host string, db_port int, db_name string, db_user string, db
 	log.Println("Connection to DB successful.")
 	return &DBClient{db_conn}
 
+}
+
+func (db *DBClient) SetFavourites(dList []string) *sql.Rows {
+
+	log.Printf("Initiate SetFavourites")
+
+	var updateRows *sql.Rows
+	var updateErr error
+
+	buf := bytes.NewBufferString("UPDATE domains SET favourite = TRUE WHERE name in ('")
+	for i, dName := range dList {
+		if i > 0 {
+			buf.WriteString("','")
+		}
+		buf.WriteString(dName)
+	}
+	buf.WriteString("')")
+
+	// Debug
+	//fmt.Println("SQL: ", buf.String())
+
+	updateRows, updateErr = db.Database.Query(buf.String())
+	if updateErr != nil {
+		log.Fatal("Error on SQL UPDATE => ", updateErr)
+	}
+
+	return updateRows
+}
+
+// delete all Favourites
+func (db *DBClient) ResetFavourites() *sql.Rows {
+
+	log.Printf("Initiate ResetFavourites")
+
+	var updateRows *sql.Rows
+	var updateErr error
+
+	sqlUpdate := "UPDATE domains SET favourite = FALSE"
+
+	updateRows, updateErr = db.Database.Query(sqlUpdate)
+	if updateErr != nil {
+		log.Fatal("Error on SQL UPDATE => ", updateErr)
+	}
+
+	return updateRows
 }
 
 func (db *DBClient) CountFavouriteDomains() int {

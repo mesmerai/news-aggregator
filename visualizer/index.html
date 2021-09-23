@@ -35,46 +35,39 @@
       <div class="column left">
 
         <div class="window">
+          {{ if ( gt .Favourites.Count 0) }}
           <p>
             <b>Favourite Feeds</b>
           </p>
-          <form action="/save" method="GET">
-            <input checked type="checkbox" name="domain1" value="rainews.it">
-            <label for="domain1">rainews.it</label><br> 
-            <input checked type="checkbox" name="domain2" value="corriere.it">
-            <label for="domain2">corriere.it</label><br> 
-            <input checked type="checkbox" name="domain3" value="ansa.it">
-            <label for="domain3"></label>ansa.it</label><br> 
+          <form action="/saveFeeds" method="GET">
+            {{ range.Favourites.Domains }}
+            <input checked type="checkbox" name="sfeed" value="{{  .Name }}">
+            <label for="sfeed">{{  .Name }}</label><br> 
+            {{ end }}
             <p>
               <input class="search-button" type="submit" value="Save">
-              <a href="./manage?" class="button github-button">Manage</a>
             </p>
-          </form>
+           </form>  
+          {{ end }}
         </div>
 
         <!-- to be create with JS eventually ?? -->
         <div class="window">
-
           {{ if ( gt .NotFavourites.Count 0) }}
           <p>
             <b>Add Feeds to Favourites</b>
           </p>
-          <form action="/add" method="GET"></form>
+          <form action="/addFeeds" method="GET">
             {{ range.NotFavourites.Domains }}
-
-            <input type="checkbox" name="feed-{{ .ID }}" value="{{  .Name }}">
-            <label for="feed-{{ .ID }}">{{  .Name }}</label><br> 
-
+            <input type="checkbox" name="afeed" value="{{  .Name }}">
+            <label for="afeed">{{  .Name }}</label><br> 
             {{ end }}
           <p>
             <input class="search-button" type="submit" value="Add">
-            <a href="./add?" class="button github-button">Add</a>
           </p>
            </form>  
           {{ end }}
-            
         </div>  
-
       </div>
 
       <div class="column middle">

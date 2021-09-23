@@ -16,7 +16,7 @@ What it does/provides:
 > It's recommended to set up a restricted set of feeds to limit the total number of API calls.
 
 ## visualizer
-Service to provide a web interface for reading records store in the db.
+Service to provide a web interface for reading records stored in the db.
 
 What it does/provides:  
 - search of articles with/without keyword 

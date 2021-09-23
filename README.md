@@ -39,6 +39,25 @@ export NEWS_API_KEY="<news-api-key-here>"
 export DB_PASSWORD="<postgres-db-password-here>
 ```
 
+## Start with Docker compose
+Build
+```
+$ sudo docker-compose build --build-arg NEWS_API_KEY=--build-arg NEWS_API_KEY=<news-api-key-here> --build-arg DB_PASSWORD=<db-password-here> 
+```
+Run
+```
+$ sudo docker-compose up
+```
+
+To troubleshoot *ncollector* startup:
+```
+2021/09/23 14:10:06 Initiate Connection to DB.
+2021/09/23 14:10:06 Error connecting to DB => dial tcp 127.0.0.1:5432: connect: connection refused
+```
+
+
+
+
 ## Start Postgres Docker Image
 Build the image from the ```db/Dockerfile```:
 ```
@@ -91,6 +110,7 @@ $ sudo docker build --build-arg NEWS_API_KEY=<news-api-key-here> --build-arg DB_
 
 
 
+
 ### Other useful docker commands
 ```
 -- list containers
@@ -114,6 +134,13 @@ To troubleshoot:
 $ sudo docker logsv <mycontainer>
 $ docker exec -it <mycontainer> bash
 ```
+
+Networks
+```
+$ sudo docker network ls
+$ sudo docker network prune
+```
+
 
 # Dev Takeaways
 

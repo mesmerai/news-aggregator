@@ -9,6 +9,7 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+
 	"github.com/mesmerai/news-aggregator/ncollector/data"
 	"github.com/mesmerai/news-aggregator/ncollector/news"
 )

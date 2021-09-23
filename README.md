@@ -39,7 +39,7 @@ export NEWS_API_KEY="<news-api-key-here>"
 export DB_PASSWORD="<postgres-db-password-here>
 ```
 
-## Start the Postgres Docker Image
+## Start Postgres Docker Image
 Build the image from the ```db/Dockerfile```:
 ```
 $ sudo docker build -t mesmerai/news-postgres db
@@ -78,7 +78,17 @@ news=# \d
 
 ```
 
-### To rebuild the image
+## Start ncollector Docker image
+
+```
+$ sudo docker build -t mesmerai/ncollector ncollector
+```
+
+
+
+
+
+### Other useful docker commands
 ```
 -- list containers
 $ sudo docker ps -all
@@ -93,6 +103,12 @@ $ sudo docker rmi mesmerai/news-postgres
 ```
 
 Then rebuild (see above).   
+
+To troubleshoot:
+```
+$ sudo docker logsv <mycontainer>
+$ docker exec -it <mycontainer> bash
+```
 
 # Dev Takeaways
 

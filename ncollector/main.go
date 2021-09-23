@@ -37,8 +37,9 @@ var thisSource = Source{}
 
 // Domain struct to deal with INSERT later. Declare and initialize.
 type Domain struct {
-	id   int
-	name string
+	id        int
+	name      string
+	favourite bool
 }
 
 var thisDomain = Domain{}
@@ -63,14 +64,14 @@ func main() {
 
 	// first two functions retrieve news by country, then populate sources and domains
 	CountryFetchAndStore(myDB, newsapi, "Italy", "Italian")
-	CountryFetchAndStore(myDB, newsapi, "Australia", "English")
+	//CountryFetchAndStore(myDB, newsapi, "Australia", "English")
 
 	// this second function query domains from DB given a restricted list, then get news for those domains
 	// modified to work on a restricted list of domains
 	// otherwise reach the LIMIT of 50 API calls in 12 hours
 	// restricted list of domains REQUIRED to not reach the API call daily LIMIT
-	dList := []string{"corriere.it", "ansa.it", "rainews.it"}
-	GlobalFetchAndStore(myDB, newsapi, dList)
+	//dList := []string{"corriere.it", "ansa.it", "rainews.it"}
+	//GlobalFetchAndStore(myDB, newsapi, dList)
 
 }
 
@@ -204,7 +205,7 @@ func CountryFetchAndStore(myDB *data.DBClient, newsapi *news.Client, country, la
 
 			// Scan copies the columns in the current row into the values pointed at by dest.
 			// The number of values in dest must be the same as the number of columns in Rows.
-			err := domainRows.Scan(&thisDomain.id, &thisDomain.name)
+			err := domainRows.Scan(&thisDomain.id, &thisDomain.name, &thisDomain.favourite)
 			if err != nil {
 				log.Fatal("Error on reading SQL SELECT results => ", err)
 			}

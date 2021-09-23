@@ -29,6 +29,23 @@ var myDB *data.DBClient
 // Loading HTML Template from file. Will will panic if error is not-nil.
 var tmpl = template.Must(template.ParseFiles("./index.html"))
 
+type Data struct {
+	Query         string
+	NextPage      int
+	TotalPages    int
+	Results       *data.Results
+	Favourites    *data.FavouriteDomains
+	NotFavourites *data.NotFavouriteDomains
+}
+
+var pageData Data
+
+/*
+type Feeds struct {
+	Favourites    *data.FavouriteDomains
+	NotFavourites *data.NotFavouriteDomains
+}
+
 // Search struct for search queries. Populated and used in the html template as data object in the searchHandler
 type Search struct {
 	Query      string
@@ -36,15 +53,16 @@ type Search struct {
 	TotalPages int
 	Results    *data.Results
 }
+*/
 
 // determine if it's LastPage to set the 'Next' button
-func (s *Search) IsLastPage() bool {
+func (s *Data) IsLastPage() bool {
 	return s.NextPage >= s.TotalPages
 }
 
 // get CurrentPage to set the 'Previous' button
 // CurrentPage is always NextPage - 1, except when we have only one page
-func (s *Search) CurrentPage() int {
+func (s *Data) CurrentPage() int {
 	if s.NextPage == 1 {
 		return s.NextPage
 	}
@@ -52,7 +70,7 @@ func (s *Search) CurrentPage() int {
 }
 
 // PreviousPage
-func (s *Search) PreviousPage() int {
+func (s *Data) PreviousPage() int {
 	return s.CurrentPage() - 1
 }
 
@@ -64,8 +82,60 @@ to the connection as part of an HTTP response.
 - the r parameter represents the HTTP request received from the client.
 */
 func indexHandler(w http.ResponseWriter, r *http.Request) {
+
+	// some vars declared
+	var err error
+	var favResults *data.FavouriteDomains
+	var notFavResults *data.NotFavouriteDomains
+	var favCount, notFavCount int
+
+	// ** retrieve Feeds to populate the menu on the left side */
+
+	favCount = myDB.CountFavouriteDomains()
+	favResults = myDB.GetFavouriteDomains()
+	favResults.Count = favCount
+
+	notFavCount = myDB.CountNotFavouriteDomains()
+	notFavResults = myDB.GetNotFavouriteDomains()
+	notFavResults.Count = notFavCount
+
+	thisData := &pageData
+	*thisData = Data{
+		Query:         pageData.Query,
+		NextPage:      pageData.NextPage,
+		TotalPages:    pageData.TotalPages,
+		Results:       pageData.Results,
+		Favourites:    favResults,
+		NotFavourites: notFavResults,
+	}
+
+	/*
+		data := &Data{
+			Query:         &Data.Query,
+			NextPage:      NextPage,
+			TotalPages:    TotalPages,
+			Results:       Results,
+			Favourites:    favResults,
+			NotFavourites: notFavResults,
+		}
+	*/
+	// define empty intermediate buffer
+	buffer := &bytes.Buffer{}
+
+	// write to intermediate buffer to check errors
+	err = tmpl.Execute(buffer, thisData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Then the buffer is written to the ResponseWriter
+	// func (r *Reader) WriteTo(w io.Writer) (n int64, err error)
+	buffer.WriteTo(w)
+
 	//show the HTML template
-	tmpl.Execute(w, nil)
+	//tmpl.Execute(w, nil)
+
 	//w.Write([]byte("<h1>Hello World!</h1>\n"))
 	// log the request
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
@@ -159,22 +229,18 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		results.TotalResults = count
 	case country == "Australia":
 		if searchQuery == "" {
-			// to be defined
 			count = myDB.CountArticlesByCountry(country, "")
 			results = myDB.GetArticlesByCountry(limitToInt, offset, country, "")
 		} else {
-			// to be defined
 			count = myDB.CountArticlesByCountry(country, searchQuery)
 			results = myDB.GetArticlesByCountry(limitToInt, offset, country, searchQuery)
 		}
 		results.TotalResults = count
 	case country == "Italy":
 		if searchQuery == "" {
-			// to be defined
 			count = myDB.CountArticlesByCountry(country, "")
 			results = myDB.GetArticlesByCountry(limitToInt, offset, country, "")
 		} else {
-			// to be defined
 			count = myDB.CountArticlesByCountry(country, searchQuery)
 			results = myDB.GetArticlesByCountry(limitToInt, offset, country, searchQuery)
 		}
@@ -200,16 +266,29 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 	// We save our results into the Search struct defined above
 	// so that we can use it for Pagination
-	search := &Search{
-		Query:      searchQuery,
-		NextPage:   nextPage,
-		TotalPages: tot,
-		Results:    results,
+
+	thisData := &pageData
+	*thisData = Data{
+		Query:         searchQuery,
+		NextPage:      nextPage,
+		TotalPages:    tot,
+		Results:       results,
+		Favourites:    pageData.Favourites,
+		NotFavourites: pageData.NotFavourites,
 	}
 
+	/*
+		data := &Data{
+			Query:      searchQuery,
+			NextPage:   nextPage,
+			TotalPages: tot,
+			Results:    results,
+		}
+	*/
+
 	// this block is to increment NextPage
-	if !search.IsLastPage() {
-		search.NextPage++
+	if !thisData.IsLastPage() {
+		thisData.NextPage++
 	}
 
 	// Intermediatie empty byte buffer where the Template is execute first to check errors
@@ -220,7 +299,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	// func (t *Template) Execute(wr io.Writer, data interface{}) error
 	// Execute applies a parsed template to the specified data object, writing the output to wr.
 	// If an error occurs executing the template or writing its output, execution stops, but partial results may already have been written to the output writer.
-	err = tmpl.Execute(buffer, search)
+	err = tmpl.Execute(buffer, thisData)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

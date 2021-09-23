@@ -5,7 +5,8 @@ CREATE TABLE Sources (
 
 CREATE TABLE Domains (
 		id SERIAL PRIMARY KEY,
-		name TEXT
+		name TEXT,
+		favourite BOOLEAN NOT NULL DEFAULT false 
 );
 
 CREATE TABLE Articles (

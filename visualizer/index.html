@@ -13,7 +13,7 @@
       <a class="logo" href="/">News Aggregator</a>
       <form action="/search" method="GET">
         <p> 
-          Search Country:  
+          Search Country:    
           <select class="search-button" name="country">
             <option value="Global">🌍 Global</option>
             <option value="Australia">🇦🇺 Australia</option>
@@ -33,6 +33,7 @@
     </header>
     <div class="row">
       <div class="column left">
+
         <div class="window">
           <p>
             <b>Favourite Feeds</b>
@@ -43,48 +44,36 @@
             <input checked type="checkbox" name="domain2" value="corriere.it">
             <label for="domain2">corriere.it</label><br> 
             <input checked type="checkbox" name="domain3" value="ansa.it">
-            <label for="domain3"></label>ansa.it</label><br> <br>
+            <label for="domain3"></label>ansa.it</label><br> 
             <p>
               <input class="search-button" type="submit" value="Save">
               <a href="./manage?" class="button github-button">Manage</a>
             </p>
           </form>
         </div>
-        <!-- to be create with JS when click on Manage Button-->
- 
+
+        <!-- to be create with JS eventually ?? -->
         <div class="window">
-            <p>
-              <b>Add Feeds to Favourites</b>
-            </p>
-            
-            <form action="/add" method="GET">
-                <input type="checkbox" name="domain100" value="repubblica.it">
-                <label for="domain1">repubblica.it</label><br> 
-                <input type="checkbox" name="domain200" value="smh.com.au">
-                <label for="domain2">smh.com.au</label><br> 
-                <input type="checkbox" name="domain300" value="lastampa.it">
-                <label for="domain3"></label>lastampa.it</label><br> 
-                <input type="checkbox" name="domain300" value="arstechnica.com                ">
-                <label for="domain3"></label>arstechnica.com</label><br> 
-                <input type="checkbox" name="domain300" value="arstechnica.com                ">
-                <label for="domain3"></label>arstechnica.com</label><br> 
-                <input type="checkbox" name="domain100" value="abc.net.au">
-                <label for="domain1">abc.net.au</label><br> 
-                <input type="checkbox" name="domain200" value="internazionale.it">
-                <label for="domain2">internazionale.it</label><br> 
-                <input type="checkbox" name="domain300" value="itnews.com.au">
-                <label for="domain3"></label>itnews.com.au</label><br>
-              <p>
-                <input class="search-button" type="submit" value="Add">
-                <a href="./add?" class="button github-button">Add</a>
-              </p>
-             </form>
+
+          {{ if ( gt .NotFavourites.Count 0) }}
+          <p>
+            <b>Add Feeds to Favourites</b>
+          </p>
+          <form action="/add" method="GET"></form>
+            {{ range.NotFavourites.Domains }}
+
+            <input type="checkbox" name="feed-{{ .ID }}" value="{{  .Name }}">
+            <label for="feed-{{ .ID }}">{{  .Name }}</label><br> 
+
+            {{ end }}
+          <p>
+            <input class="search-button" type="submit" value="Add">
+            <a href="./add?" class="button github-button">Add</a>
+          </p>
+           </form>  
+          {{ end }}
             
         </div>  
-
- 
-
-
 
       </div>
 
@@ -104,6 +93,7 @@
         {{ end }}
         </div>
       <ul class="search-results">
+       {{ if .Results }} 
         {{ range.Results.Articles }}
         <li class="news-article">
           <div>
@@ -119,6 +109,7 @@
           <img class="article-image" src="{{ .URLToImage }}" />
         </li>
         {{ end }}
+      {{ end }}  
       </ul>
       <div class="pagination">
         {{ if . }}

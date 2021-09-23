@@ -23,8 +23,19 @@ type Source struct {
 }
 
 type Domain struct {
-	ID   int
-	Name int
+	ID        int
+	Name      string
+	Favourite bool
+}
+
+type FavouriteDomains struct {
+	Domains []Domain
+	Count   int
+}
+
+type NotFavouriteDomains struct {
+	Domains []Domain
+	Count   int
 }
 
 /* Article structs */
@@ -79,6 +90,44 @@ func NewDBClient(db_host string, db_port int, db_name string, db_user string, db
 
 }
 
+func (db *DBClient) CountFavouriteDomains() int {
+	log.Printf("Initiate CountFavouriteDomains")
+
+	var id = 0
+	var selectRow *sql.Row
+	var selectErr error
+
+	sqlSelect := "SELECT COUNT(*) FROM domains WHERE favourite IS TRUE"
+	selectRow = db.Database.QueryRow(sqlSelect)
+
+	selectErr = selectRow.Scan(&id)
+	if selectErr != nil {
+		log.Fatal("Error on SQL SELECT => ", selectErr)
+	}
+
+	return id
+
+}
+
+func (db *DBClient) CountNotFavouriteDomains() int {
+	log.Printf("Initiate CountNotFavouriteDomains")
+
+	var id = 0
+	var selectRow *sql.Row
+	var selectErr error
+
+	sqlSelect := "SELECT COUNT(*) FROM domains WHERE favourite IS FALSE"
+	selectRow = db.Database.QueryRow(sqlSelect)
+
+	selectErr = selectRow.Scan(&id)
+	if selectErr != nil {
+		log.Fatal("Error on SQL SELECT => ", selectErr)
+	}
+
+	return id
+
+}
+
 func (db *DBClient) CountArticles(word string) int {
 	log.Printf("Initiate CountArticles")
 
@@ -130,6 +179,76 @@ func (db *DBClient) CountArticlesByCountry(country, word string) int {
 	}
 
 	return id
+
+}
+
+func (db *DBClient) GetFavouriteDomains() *FavouriteDomains {
+
+	log.Printf("Initiate GetFavouriteDomains")
+	res := &FavouriteDomains{}
+
+	var selectRows *sql.Rows
+	var selectErr error
+	sqlSelect := ""
+
+	sqlSelect = `SELECT d.id, d.name, d.favourite  
+	FROM domains d 
+	WHERE  favourite IS TRUE
+	ORDER BY d.name ASC`
+
+	selectRows, selectErr = db.Database.Query(sqlSelect)
+
+	if selectErr != nil {
+		log.Fatal("Error on SQL SELECT => ", selectErr)
+	}
+
+	for selectRows.Next() {
+		var d Domain
+		err := selectRows.Scan(&d.ID, &d.Name, &d.Favourite)
+		if err != nil {
+			log.Fatal("Error on reading SQL SELECT results => ", err)
+		}
+
+		// populate the domains struct and write that into FavouriteDomains.Domain that is a slice:  []Domain
+		res.Domains = append(res.Domains, d)
+	}
+
+	return res
+
+}
+
+func (db *DBClient) GetNotFavouriteDomains() *NotFavouriteDomains {
+
+	log.Printf("Initiate GetNotFavouriteDomains")
+	res := &NotFavouriteDomains{}
+
+	var selectRows *sql.Rows
+	var selectErr error
+	sqlSelect := ""
+
+	sqlSelect = `SELECT d.id, d.name, d.favourite  
+	FROM domains d 
+	WHERE  favourite IS FALSE
+	ORDER BY d.name ASC`
+
+	selectRows, selectErr = db.Database.Query(sqlSelect)
+
+	if selectErr != nil {
+		log.Fatal("Error on SQL SELECT => ", selectErr)
+	}
+
+	for selectRows.Next() {
+		var d Domain
+		err := selectRows.Scan(&d.ID, &d.Name, &d.Favourite)
+		if err != nil {
+			log.Fatal("Error on reading SQL SELECT results => ", err)
+		}
+
+		// populate the domains struct and write that into FavouriteDomains.Domain that is a slice:  []Domain
+		res.Domains = append(res.Domains, d)
+	}
+
+	return res
 
 }
 

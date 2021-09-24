@@ -8,90 +8,85 @@ Service to fetch articles via News API and populate the DB.
 What it does/provides:
 - fetch of news ByCountry (Italy and Australia supported)
 - populate sources and domains in the DB
-- fetch of news Globally given a set of feeds
+- fetch of news Globally given a set of feeds (domains)
 
 
-> Favourite Feeds can be set from the user via web ui (visualizer).  
-> NEWS API Dev(free) plan is limited to 50 API requests every 6h.  
-> It's recommended to set up a restricted set of feeds to limit the total number of API calls.
+This app is scheduled to run the above mentioned functions every 6 hours.  
+Given the limit of 50 API calls every 12h per Dev/Free NEWS API Plan,   
+the max numbers of calls become 25 in 6 hours (2 per Country + 23 for each feed).   
+Therefore the Maximum number of Favourite Feeds is: **23**.
+
 
 ## visualizer
 Service to provide a web interface for reading records stored in the db.
 
 What it does/provides:  
-- search of articles with/without keyword 
-- search articles per country: Italy, Australia or Global  
-- add/remove Favourite feeds from the menus on the left side (config saved in the DB)
+- search of articles with or without a keyword 
+- search of articles per country: Italy, Australia or Global  
+- management of Favourite Feeds from the left side menus (config saved in the DB)
 
 
 A that's how it looks like:  
 ![News Aggregator](./images/news-aggregator.png)
 
-# Setup 
+# How To Start the Application 
 
-## Environment 
+## Setup the Environment 
 
 Register API Key at https://newsapi.org/ to retrieve News   
 
-Then set the following Environment variable:
+Then set the following Environment variables:
 ```
 export NEWS_API_KEY="<news-api-key-here>"
 export DB_PASSWORD="<postgres-db-password-here>
 ```
 
-The database host variable is required as needs to be set to ```db``` when running docker-compose and to ```localhost``` when running a standalone docker image for postgres (see below).
+The database host variable is required as it's picked up dinamically by the application.   
+Needs be set to ```db``` when running docker-compose and to ```localhost``` when running a standalone docker image for postgres (see below).
 ```
 -- with docker-compose
-$ export DB_HOST="db"
+export DB_HOST="db"
 
 -- with docker
-$ export DB_HOST="localhost"
+export DB_HOST="localhost"
 ```
 
 
-## Start with Docker compose
+## Start Everything with Docker Compose
 Build
 ```
-$ sudo docker-compose build --build-arg NEWS_API_KEY=<news-api-key-here> --build-arg DB_PASSWORD=<db-password-here> --build-arg DB_HOST=<db-host>
+sudo docker-compose build --build-arg NEWS_API_KEY="${NEWS_API_KEY}" --build-arg DB_PASSWORD="${DB_PASSWORD}"  --build-arg DB_HOST="${DB_HOST}"
 
 ```
 Run
 ```
-$ sudo docker-compose up
+sudo docker-compose up
 ```
 
-### Troubleshooting
-
-*Error*          
+## Shutdown Everything 
 ```
-2021/09/23 14:10:06 Initiate Connection to DB.
-2021/09/23 14:10:06 Error connecting to DB => dial tcp 127.0.0.1:5432: connect: connection refused
-```
-*Fix*        
-Solved by specifying the DB_HOST as env parameter and implementing Retries on DB connection.   
-
-*Error*     
-```
-Error connecting to DB => dial tcp: lookup local on 127.0.0.11:53: no such host
+sudo docker-compose down
 ```
 
-*Fix*      
-Solved with networks and make sure you pass the build param ```--build-arg DB_HOST=db``` to docker-compose build.
+Done.   
+No other steps required.       
 
 
 
+## Alernative - Start Docker Images Alone
 
-## Start Postgres Docker Image
+### Postgres Docker Image
+
 Build the image from the ```db/Dockerfile```:
 ```
-$ sudo docker build -t mesmerai/news-postgres db
+sudo docker build -t mesmerai/news-postgres db
 
 ```
 
 Run the image passing the POSTGRES_PASSWORD as parameter:
 
 ```
-$ sudo docker run --name news-postgres -p 5432:5432 -e POSTGRES_PASSWORD="<postgres-db-password-here> -d mesmerai/news-postgres
+sudo docker run --name news-postgres -p 5432:5432 -e POSTGRES_PASSWORD="${DB_PASSWORD}" -d mesmerai/news-postgres
 ```
 
 Check running docker image:
@@ -121,50 +116,17 @@ news=# \d
 
 ```
 
-## Start ncollector Docker image
+###  ncollector Docker Image
 
-Build the image from ncollector/Dockerfile:
+Build the image from ```ncollector/Dockerfile```:
 
 ```
-$ sudo docker build --build-arg NEWS_API_KEY=<news-api-key-here> --build-arg DB_PASSWORD=<db-password-here> -t mesmerai/ncollector ncollector
-```
-
-
-### Other useful docker and docker-compose commands
-```
--- list containers
-$ sudo docker ps -all
-$ sudo docker container ls -a
-
--- stop container
-$ sudo docker stop <container-id>
--- remove container
-$ sudo docker rm <container-id>
--- list images
-$ sudo docker images
--- remove the image
-$ sudo docker rmi mesmerai/news-postgres
+sudo docker build --build-arg NEWS_API_KEY="${NEWS_API_KEY}" --build-arg DB_PASSWORD="${DB_PASSWORD}" -t mesmerai/ncollector ncollector
 ```
 
-Then rebuild (see above).   
+### visualizer Docker Image
 
-To troubleshoot:
-```
-$ sudo docker logsv <mycontainer>
-$ docker exec -it <mycontainer> bash
-```
-
-Networks
-```
-$ sudo docker network ls
-$ sudo docker network prune
-```
-
-docker-compose
-```
--- Stops containers and removes containers, networks, volumes, and images created by up
-$ sudo docker-compose down
-```
+Same as ncollector.   
 
 
 
@@ -239,13 +201,13 @@ type AutoGenerated struct {
 Example below:
 ```
 -- tag
-$ git tag -a v0.3 -m 'realease with docker-compose startup'
+git tag -a v0.3 -m 'realease with docker-compose startup'
 
 -- commit (sharing)
-$ git push origin v0.3
+git push origin v0.3
 
 -- list tags
-$ git tag -l
+git tag -l
 
 
 ```
@@ -253,6 +215,48 @@ $ git tag -l
 
 
 # Appendix
+
+## Useful Commands for Docker and Docker Compose
+
+### Docker
+
+Containers and Images  
+```
+-- list containers
+sudo docker ps -all
+sudo docker container ls -a
+
+-- stop container
+sudo docker stop <container-id>  
+
+-- remove container
+sudo docker rm <container-id>
+
+-- list images
+sudo docker images
+
+-- remove the image
+sudo docker rmi <image-id>
+``` 
+
+Troubleshooting
+```
+sudo docker logs <container-id>
+sudo docker exec -it <container-id> bash
+sudo docker inspect <container-id>
+```
+
+Networks
+```
+sudo docker network ls
+sudo docker network prune
+```
+
+### Docker Compose
+```
+-- Stops containers and removes containers, networks, volumes, and images created by up
+sudo docker-compose down
+```
 
 ## Install Docker (Fedora 34)
 
@@ -362,3 +366,21 @@ Grant permissions to DB
 # GRANT USAGE ON SCHEMA public TO db_user;
 ```
 
+# Troubleshooting 
+
+*Error*          
+```
+2021/09/23 14:10:06 Initiate Connection to DB.
+2021/09/23 14:10:06 Error connecting to DB => dial tcp 127.0.0.1:5432: connect: connection refused
+```
+*Fix*        
+Solved by specifying the DB_HOST as env parameter and implementing Retries on DB connection.   
+  
+
+*Error*     
+```
+Error connecting to DB => dial tcp: lookup local on 127.0.0.11:53: no such host
+```
+
+*Fix*      
+Solved with networks and make sure you pass the build param ```--build-arg DB_HOST=db``` to docker-compose build.

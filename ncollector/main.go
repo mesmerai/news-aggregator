@@ -94,7 +94,8 @@ func main() {
 		log.Println("Favourite Feeds: ", dList)
 		GlobalFetchAndStore(myDB, newsapi, dList)
 
-		time.Sleep(6 * time.Hour)
+		// ever 3 hours, max 10 feeds
+		time.Sleep(3 * time.Hour)
 
 	}
 

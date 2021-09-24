@@ -11,10 +11,15 @@ What it does/provides:
 - fetch of news Globally given a set of feeds (domains)
 
 
-This app is scheduled to run the above mentioned functions every 6 hours.  
-Given the limit of 50 API calls every 12h per Dev/Free NEWS API Plan,   
-the max numbers of calls become 25 in 6 hours (2 per Country + 23 for each feed).   
-Therefore the Maximum number of Favourite Feeds is: **23**.
+This app is scheduled to run the above mentioned functions every 3 hours.  
+There's a limit of 50 API calls every 12h per Dev/Free NEWS API Plan.     
+
+Meaning, if we consume 2 calls for country first (Australia, Italy) we need to set a Max number of feeds to not reach the limit.   
+Like:      
+| schedule | max calls | max feeds |
+|----------|-----------|-----------|
+| 6 hours  | 25        | **23**    |
+| 3 hours  | 12,5  ~   | **10**    |
 
 
 ## visualizer
@@ -251,6 +256,17 @@ Networks
 sudo docker network ls
 sudo docker network prune
 ```
+
+Volumes
+```
+-- list
+sudo docker volume ls
+-- prune
+sudo docker volume prune
+-- delete volume so postgres will start empty
+sudo docker volume rm news-aggregator_pgdata
+```
+
 
 ### Docker Compose
 ```

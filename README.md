@@ -62,20 +62,20 @@ $ sudo docker-compose up
 
 ### Troubleshooting
 
-**Error**
+*Error*          
 ```
 2021/09/23 14:10:06 Initiate Connection to DB.
 2021/09/23 14:10:06 Error connecting to DB => dial tcp 127.0.0.1:5432: connect: connection refused
 ```
-*Fix*      
+*Fix*        
 Solved by specifying the DB_HOST as env parameter and implementing Retries on DB connection.   
 
-**Error** 
+*Error*     
 ```
 Error connecting to DB => dial tcp: lookup local on 127.0.0.11:53: no such host
 ```
 
-*Fix* 
+*Fix*      
 Solved with networks and make sure you pass the build param ```--build-arg DB_HOST=db``` to docker-compose build.
 
 

@@ -29,7 +29,7 @@ A that's how it looks like:
 
 # Setup 
 
-## Set News Api Key
+## Environment 
 
 Register API Key at https://newsapi.org/ to retrieve News   
 
@@ -38,6 +38,16 @@ Then set the following Environment variable:
 export NEWS_API_KEY="<news-api-key-here>"
 export DB_PASSWORD="<postgres-db-password-here>
 ```
+
+The database host variable is required as needs to be set to ```db``` when running docker-compose and to ```localhost``` when running a standalone docker image for postgres (see below).
+```
+-- with docker-compose
+$ export DB_HOST="db"
+
+-- with docker
+$ export DB_HOST="localhost"
+```
+
 
 ## Start with Docker compose
 Build
@@ -53,6 +63,12 @@ To troubleshoot *ncollector* startup:
 ```
 2021/09/23 14:10:06 Initiate Connection to DB.
 2021/09/23 14:10:06 Error connecting to DB => dial tcp 127.0.0.1:5432: connect: connection refused
+```
+Solved by specifying the DB_HOST as env parameter and implementing Retries on DB connection.   
+
+Now, to troubleshoot: 
+```
+Error connecting to DB => dial tcp: lookup local on 127.0.0.11:53: no such host
 ```
 
 
@@ -111,7 +127,7 @@ $ sudo docker build --build-arg NEWS_API_KEY=<news-api-key-here> --build-arg DB_
 
 
 
-### Other useful docker commands
+### Other useful docker and docker-compose commands
 ```
 -- list containers
 $ sudo docker ps -all
@@ -140,6 +156,13 @@ Networks
 $ sudo docker network ls
 $ sudo docker network prune
 ```
+
+docker-compose
+```
+-- Stops containers and removes containers, networks, volumes, and images created by up
+$ sudo docker-compose down
+```
+
 
 
 # Dev Takeaways

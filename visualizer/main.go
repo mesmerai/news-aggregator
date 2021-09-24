@@ -15,12 +15,14 @@ import (
 
 // DB Conn Vars
 var environment = getEnv()
-var db_host string = "localhost"
+
 var db_port int = 5432
 var db_name string = "news"
 var db_user string = "news_db_user"
+var dbconn_max_retries = 10
 
 // Secrets from ENV
+var db_host = environment["db_host"]
 var db_password = environment["db_password"]
 
 //DB
@@ -39,21 +41,6 @@ type Data struct {
 }
 
 var pageData Data
-
-/*
-type Feeds struct {
-	Favourites    *data.FavouriteDomains
-	NotFavourites *data.NotFavouriteDomains
-}
-
-// Search struct for search queries. Populated and used in the html template as data object in the searchHandler
-type Search struct {
-	Query      string
-	NextPage   int
-	TotalPages int
-	Results    *data.Results
-}
-*/
 
 // determine if it's LastPage to set the 'Next' button
 func (s *Data) IsLastPage() bool {
@@ -112,16 +99,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		NotFavourites: notFavResults,
 	}
 
-	/*
-		data := &Data{
-			Query:         &Data.Query,
-			NextPage:      NextPage,
-			TotalPages:    TotalPages,
-			Results:       Results,
-			Favourites:    favResults,
-			NotFavourites: notFavResults,
-		}
-	*/
 	// define empty intermediate buffer
 	buffer := &bytes.Buffer{}
 
@@ -135,11 +112,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	// Then the buffer is written to the ResponseWriter
 	// func (r *Reader) WriteTo(w io.Writer) (n int64, err error)
 	buffer.WriteTo(w)
-
-	//show the HTML template
-	//tmpl.Execute(w, nil)
-
-	//w.Write([]byte("<h1>Hello World!</h1>\n"))
 
 }
 
@@ -350,7 +322,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 
 	/* ** DB Conn ** */
-	myDB = data.NewDBClient(db_host, db_port, db_name, db_user, db_password)
+	myDB = data.NewDBClient(db_host, db_port, db_name, db_user, db_password, dbconn_max_retries)
 
 	// myDB = *DBClient(db_conn)
 	defer myDB.Database.Close()
@@ -384,22 +356,30 @@ func main() {
 	// ListenAndServe starts an HTTP server with a given address and handler.
 	// -- http://localhost:8080
 	http.ListenAndServe(":8080", mux)
+
+	log.Println("Server Listening.")
 }
 
 func getEnv() map[string]string {
 
 	envMap := map[string]string{}
-
-	news_api_key := os.Getenv("NEWS_API_KEY")
-	if news_api_key == "" {
-		log.Fatal("News Api Key is not set in ENV.")
+	/*
+		news_api_key := os.Getenv("NEWS_API_KEY")
+		if news_api_key == "" {
+			log.Fatal("News Api Key is not set in ENV.")
+		}
+	*/
+	db_host := os.Getenv("DB_HOST")
+	if db_host == "" {
+		log.Fatal("DB_HOST is not set in ENV.")
 	}
 	db_password := os.Getenv("DB_PASSWORD")
 	if db_password == "" {
 		log.Fatal("Password for the DB is not set in ENV.")
 	}
 
-	envMap["news_api_key"] = news_api_key
+	//envMap["news_api_key"] = news_api_key
+	envMap["db_host"] = db_host
 	envMap["db_password"] = db_password
 
 	return envMap

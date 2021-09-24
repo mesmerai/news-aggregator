@@ -15,14 +15,16 @@ import (
 )
 
 var environment = getEnv()
-var db_host string = "localhost"
+
 var db_port int = 5432
 var db_name string = "news"
 var db_user string = "news_db_user"
+var dbconn_max_retries = 10
 
 // from Env
-var db_password = environment["db_password"]
 var news_api_key string = environment["news_api_key"]
+var db_host = environment["db_host"]
+var db_password = environment["db_password"]
 
 /* ** vars ** */
 var sourceID int
@@ -52,7 +54,7 @@ func main() {
 	newsapi := news.NewClient(myClient, news_api_key, 100)
 
 	/* ** DB Conn ** */
-	myDB := data.NewDBClient(db_host, db_port, db_name, db_user, db_password)
+	myDB := data.NewDBClient(db_host, db_port, db_name, db_user, db_password, dbconn_max_retries)
 
 	// myDB = *DBClient(db_conn)
 	defer myDB.Database.Close()
@@ -293,12 +295,17 @@ func getEnv() map[string]string {
 	if news_api_key == "" {
 		log.Fatal("News Api Key is not set in ENV.")
 	}
+	db_host := os.Getenv("DB_HOST")
+	if db_host == "" {
+		log.Fatal("DB_HOST is not set in ENV.")
+	}
 	db_password := os.Getenv("DB_PASSWORD")
 	if db_password == "" {
 		log.Fatal("Password for the DB is not set in ENV.")
 	}
 
 	envMap["news_api_key"] = news_api_key
+	envMap["db_host"] = db_host
 	envMap["db_password"] = db_password
 
 	return envMap

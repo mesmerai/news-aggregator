@@ -64,7 +64,7 @@ func (a *Article) FormatPublishedDate() string {
 
 }
 
-func NewDBClient(db_host string, db_port int, db_name string, db_user string, db_password string) (db *DBClient) {
+func NewDBClient(db_host string, db_port int, db_name string, db_user string, db_password string, maxRetries int) (db *DBClient) {
 
 	log.Println("Initiate Connection to DB.")
 
@@ -77,11 +77,16 @@ func NewDBClient(db_host string, db_port int, db_name string, db_user string, db
 		log.Fatal("Error validating DB connection parameters => ", err)
 	}
 
-	//defer db_conn.Close()
-	//log.Println("Closing DB resources.")
-
 	// the method Ping() is actually attempting a connection to the database
-	err = db_conn.Ping()
+	for i := 0; i < maxRetries; i++ {
+		err = db_conn.Ping()
+		if err == nil {
+			break
+		}
+		log.Println("DB connection attempt #", i+1)
+		time.Sleep(5 * time.Second)
+	}
+
 	if err != nil {
 		log.Fatal("Error connecting to DB => ", err)
 	}

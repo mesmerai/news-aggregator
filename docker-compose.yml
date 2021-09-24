@@ -1,17 +1,27 @@
 services:
+  visualizer:
+    build: ./visualizer
+    networks:
+      - localnet
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
   ncollector: 
     build: ./ncollector
-    #command: sh -c './wait-for db:5432 -- echo "DB Ready"'
+    networks:
+      - localnet
     depends_on:
       - db
   db:
     build: ./db
+    networks:
+      - localnet
     ports: 
       - "5432:5432" 
 
-
 networks:
-  default:
+  localnet:
     driver: bridge
     ipam:
       config:

@@ -363,12 +363,7 @@ func main() {
 func getEnv() map[string]string {
 
 	envMap := map[string]string{}
-	/*
-		news_api_key := os.Getenv("NEWS_API_KEY")
-		if news_api_key == "" {
-			log.Fatal("News Api Key is not set in ENV.")
-		}
-	*/
+
 	db_host := os.Getenv("DB_HOST")
 	if db_host == "" {
 		log.Fatal("DB_HOST is not set in ENV.")
@@ -378,7 +373,6 @@ func getEnv() map[string]string {
 		log.Fatal("Password for the DB is not set in ENV.")
 	}
 
-	//envMap["news_api_key"] = news_api_key
 	envMap["db_host"] = db_host
 	envMap["db_password"] = db_password
 

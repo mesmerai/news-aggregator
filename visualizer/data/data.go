@@ -60,7 +60,16 @@ type Article struct {
 func (a *Article) FormatPublishedDate() string {
 
 	var t time.Time = a.PublishedAt
-	return fmt.Sprintln(t.Format(time.UnixDate))
+
+	loc, err := time.LoadLocation("Australia/Sydney")
+	if err != nil {
+		log.Fatal("Cannot Load Location: ", err)
+	}
+
+	localTime := t.In(loc)
+	return fmt.Sprintf("%v", localTime)
+
+	//return fmt.Sprintln(t.Format(time.UnixDate))
 
 }
 

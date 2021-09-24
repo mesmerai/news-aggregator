@@ -4,11 +4,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"regexp"
 	"strings"
 	"time"
 
 	_ "github.com/lib/pq"
+
+	"github.com/mileusna/crontab"
 
 	"github.com/mesmerai/news-aggregator/ncollector/data"
 	"github.com/mesmerai/news-aggregator/ncollector/news"
@@ -49,6 +52,31 @@ var thisDomain = Domain{}
 
 func main() {
 
+	// ** Entire Block Schedule to run every 3 hours **
+	//
+	// MAX 25 API Calls in 6 hours - 23 Max Feeds
+	// MAX 12 API Calls in 3 hours - 10 Max Feeds
+	log.Println("Initiating Cron Jobs")
+	ctab := crontab.New() // create cron table
+
+	//ctab.MustAddJob("* * * * *", FetchItaly)
+	// Run every 3 hours
+	ctab.MustAddJob("* */3 * * *", FetchItaly)
+	ctab.MustAddJob("* */3 * * *", FetchAustralia)
+	ctab.MustAddJob("* */3 * * *", FetchGlobal)
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
+
+	<-stop
+
+	//srv.db.close()
+	ctab.Clear()
+	log.Println("Clear Cron Resources")
+}
+
+func FetchGlobal() {
+
 	/* ** News Client ** */
 	myClient := &http.Client{Timeout: 10 * time.Second}
 	newsapi := news.NewClient(myClient, news_api_key, 100)
@@ -65,39 +93,64 @@ func main() {
 	log.Println("Initiate News collection")
 	log.Println("==========================================================")
 
-	// ** Entire Block Schedule to run every 6 hours **
-	//
-	// MAX 25 API Calls in 6 hours
-	// 2 SearchByCountry + 23 Favourite Feeds (MAX allowed feeds)
+	// restricted list of domains REQUIRED to not reach the API call daily LIMIT of 50 API calls in 12 hours
+	//dList := []string{"corriere.it", "ansa.it", "rainews.it"}
 
-	for {
+	rows := myDB.GetFavourites()
+	dList := make([]string, 0)
 
-		// first two functions retrieve news by country, then populate sources and domains
-		CountryFetchAndStore(myDB, newsapi, "Italy", "Italian")
-		CountryFetchAndStore(myDB, newsapi, "Australia", "English")
-
-		// restricted list of domains REQUIRED to not reach the API call daily LIMIT of 50 API calls in 12 hours
-		//dList := []string{"corriere.it", "ansa.it", "rainews.it"}
-
-		rows := myDB.GetFavourites()
-		dList := make([]string, 0)
-
-		for rows.Next() {
-			err := rows.Scan(&thisDomain.id, &thisDomain.name, &thisDomain.favourite)
-			if err != nil {
-				log.Fatal("Error on reading SQL SELECT results => ", err)
-			}
-
-			dList = append(dList, thisDomain.name)
+	for rows.Next() {
+		err := rows.Scan(&thisDomain.id, &thisDomain.name, &thisDomain.favourite)
+		if err != nil {
+			log.Fatal("Error on reading SQL SELECT results => ", err)
 		}
 
-		log.Println("Favourite Feeds: ", dList)
-		GlobalFetchAndStore(myDB, newsapi, dList)
-
-		// ever 3 hours, max 10 feeds
-		time.Sleep(3 * time.Hour)
-
+		dList = append(dList, thisDomain.name)
 	}
+
+	log.Println("Favourite Feeds: ", dList)
+	GlobalFetchAndStore(myDB, newsapi, dList)
+}
+
+func FetchItaly() {
+	/* ** News Client ** */
+	myClient := &http.Client{Timeout: 10 * time.Second}
+	newsapi := news.NewClient(myClient, news_api_key, 100)
+
+	/* ** DB Conn ** */
+	myDB := data.NewDBClient(db_host, db_port, db_name, db_user, db_password, dbconn_max_retries)
+
+	// myDB = *DBClient(db_conn)
+	defer myDB.Database.Close()
+
+	log.Println("Closing DB resources.")
+
+	log.Println("==========================================================")
+	log.Println("Initiate News collection")
+	log.Println("==========================================================")
+
+	CountryFetchAndStore(myDB, newsapi, "Italy", "Italian")
+
+}
+
+func FetchAustralia() {
+	/* ** News Client ** */
+	myClient := &http.Client{Timeout: 10 * time.Second}
+	newsapi := news.NewClient(myClient, news_api_key, 100)
+
+	/* ** DB Conn ** */
+	myDB := data.NewDBClient(db_host, db_port, db_name, db_user, db_password, dbconn_max_retries)
+
+	// myDB = *DBClient(db_conn)
+	defer myDB.Database.Close()
+
+	log.Println("Closing DB resources.")
+
+	log.Println("==========================================================")
+	log.Println("Initiate News collection")
+	log.Println("==========================================================")
+
+	CountryFetchAndStore(myDB, newsapi, "Australia", "English")
 
 }
 

@@ -1,7 +1,6 @@
 package data
 
 import (
-	"bytes"
 	"database/sql"
 	"fmt"
 	"log"
@@ -86,6 +85,9 @@ func (db *DBClient) GetDomainID(name string) int {
 
 }
 
+// ** THIS METHOD SHOULD NOT BE NEEDED ANYMORE. REPLACED BY GetFavourites() **
+// ** HOWEVER i WILL LEAVE IT HERE AS IT'S A COOL CODE BLOCK **
+/*
 func (db *DBClient) GetDomains(filter []string) *sql.Rows {
 
 	log.Printf("Initiate GetDomains")
@@ -113,6 +115,7 @@ func (db *DBClient) GetDomains(filter []string) *sql.Rows {
 	return selectRows
 
 }
+*/
 
 func (db *DBClient) GetDomainsByName(name string) *sql.Rows {
 

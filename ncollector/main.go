@@ -101,20 +101,26 @@ func FetchGlobal() {
 	// restricted list of domains REQUIRED to not reach the API call daily LIMIT of 50 API calls in 12 hours
 	//dList := []string{"corriere.it", "ansa.it", "rainews.it"}
 
-	rows := myDB.GetFavourites()
-	dList := make([]string, 0)
+	// ** COMMENTING BEFORE DELETE **
+	/*
+		rows := myDB.GetFavourites()
+		dList := make([]string, 0)
 
-	for rows.Next() {
-		err := rows.Scan(&thisDomain.id, &thisDomain.name, &thisDomain.favourite)
-		if err != nil {
-			log.Fatal("Error on reading SQL SELECT results => ", err)
+		for rows.Next() {
+			err := rows.Scan(&thisDomain.id, &thisDomain.name, &thisDomain.favourite)
+			if err != nil {
+				log.Fatal("Error on reading SQL SELECT results => ", err)
+			}
+
+			dList = append(dList, thisDomain.name)
 		}
 
-		dList = append(dList, thisDomain.name)
-	}
+		log.Println("Global | Favourite Feeds: ", dList)
+		GlobalFetchAndStore(myDB, newsapi, dList)
+	*/
 
-	log.Println("Global | Favourite Feeds: ", dList)
-	GlobalFetchAndStore(myDB, newsapi, dList)
+	GlobalFetchAndStore(myDB, newsapi)
+
 }
 
 func FetchItaly() {
@@ -160,9 +166,14 @@ func FetchAustralia() {
 }
 
 // API call for each domain - LIMIT per Dev plan reached at 50 calls in 12 hours
-func GlobalFetchAndStore(myDB *data.DBClient, newsapi *news.Client, domainsList []string) {
+func GlobalFetchAndStore(myDB *data.DBClient, newsapi *news.Client) {
 
-	domainRows := myDB.GetDomains(domainsList)
+	// ** COMMENTING BEFORE DELETE **
+	/*
+		domainRows := myDB.GetDomains(domainsList)
+	*/
+
+	domainRows := myDB.GetFavourites()
 
 	for domainRows.Next() {
 

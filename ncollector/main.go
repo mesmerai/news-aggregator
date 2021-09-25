@@ -61,9 +61,14 @@ func main() {
 
 	//ctab.MustAddJob("* * * * *", FetchItaly)
 	// Run every 3 hours
-	ctab.MustAddJob("* */3 * * *", FetchItaly)
-	ctab.MustAddJob("* */3 * * *", FetchAustralia)
-	ctab.MustAddJob("* */3 * * *", FetchGlobal)
+	//ctab.MustAddJob("* */3 * * *", FetchItaly)
+	//ctab.MustAddJob("* */3 * * *", FetchAustralia)
+	//ctab.MustAddJob("* */3 * * *", FetchGlobal)
+
+	// troubleshooting: run every 30 minutes
+	ctab.MustAddJob("*/30 * * * *", FetchItaly)
+	ctab.MustAddJob("*/30 * * * *", FetchAustralia)
+	ctab.MustAddJob("*/30 * * * *", FetchGlobal)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
@@ -87,10 +92,10 @@ func FetchGlobal() {
 	// myDB = *DBClient(db_conn)
 	defer myDB.Database.Close()
 
-	log.Println("Closing DB resources.")
+	log.Println("Global | Closing DB resources.")
 
 	log.Println("==========================================================")
-	log.Println("Initiate News collection")
+	log.Println("Global | Initiate News collection")
 	log.Println("==========================================================")
 
 	// restricted list of domains REQUIRED to not reach the API call daily LIMIT of 50 API calls in 12 hours
@@ -108,7 +113,7 @@ func FetchGlobal() {
 		dList = append(dList, thisDomain.name)
 	}
 
-	log.Println("Favourite Feeds: ", dList)
+	log.Println("Global | Favourite Feeds: ", dList)
 	GlobalFetchAndStore(myDB, newsapi, dList)
 }
 
@@ -123,10 +128,10 @@ func FetchItaly() {
 	// myDB = *DBClient(db_conn)
 	defer myDB.Database.Close()
 
-	log.Println("Closing DB resources.")
+	log.Println("ByCountry | Closing DB resources.")
 
 	log.Println("==========================================================")
-	log.Println("Initiate News collection")
+	log.Println("ByCountry | Initiate News collection")
 	log.Println("==========================================================")
 
 	CountryFetchAndStore(myDB, newsapi, "Italy", "Italian")
@@ -144,10 +149,10 @@ func FetchAustralia() {
 	// myDB = *DBClient(db_conn)
 	defer myDB.Database.Close()
 
-	log.Println("Closing DB resources.")
+	log.Println("ByCountry | Closing DB resources.")
 
 	log.Println("==========================================================")
-	log.Println("Initiate News collection")
+	log.Println("ByCountry | Initiate News collection")
 	log.Println("==========================================================")
 
 	CountryFetchAndStore(myDB, newsapi, "Australia", "English")
@@ -165,23 +170,23 @@ func GlobalFetchAndStore(myDB *data.DBClient, newsapi *news.Client, domainsList 
 		// The number of values in dest must be the same as the number of columns in Rows.
 		err := domainRows.Scan(&thisDomain.id, &thisDomain.name, &thisDomain.favourite)
 		if err != nil {
-			log.Fatal("Error on reading SQL SELECT results => ", err)
+			log.Fatal("Global | Error on reading SQL SELECT results => ", err)
 		}
 
 		log.Println("**********************************************************")
-		log.Println("Global Search ByDomain: ", thisDomain.name)
+		log.Println("Global | Search ByDomain: ", thisDomain.name)
 		log.Println("**********************************************************")
 
 		results, err := newsapi.FetchNews("Global", "", "1", thisDomain.name)
 		if err != nil {
-			log.Fatal("Error retrieving news => ", err)
+			log.Fatal("Global | Error retrieving news => ", err)
 		}
 
-		log.Println("News collection completed.")
-		log.Printf("Total results retrieved for '%s': %v", thisDomain.name, results.TotalResults)
+		log.Println("Global | News collection completed.")
+		log.Printf("Global | Total results retrieved for '%s': %v", thisDomain.name, results.TotalResults)
 
 		log.Println("--------------------------------------------------------")
-		log.Println("Iterating on Articles.")
+		log.Println("Global | Iterating on Articles.")
 		log.Println("--------------------------------------------------------")
 
 		for i, newsArticle := range results.Articles {
@@ -201,26 +206,26 @@ func GlobalFetchAndStore(myDB *data.DBClient, newsapi *news.Client, domainsList 
 				// The number of values in dest must be the same as the number of columns in Rows.
 				err := sourceRows.Scan(&thisSource.id, &thisSource.name)
 				if err != nil {
-					log.Fatal("Error on reading SQL SELECT results => ", err)
+					log.Fatal("Global | Error on reading SQL SELECT results => ", err)
 				}
 				// fill the slice to check if there are rows later
 				sources = append(sources, thisSource.name)
-				log.Printf("Records found for source: '%s'", newsArticle.Source.Name)
-				log.Printf(" - rows.id: %d\n", thisSource.id)
-				log.Printf(" - rows.name: %s\n", thisSource.name)
+				log.Printf("Global | Records found for source: '%s'", newsArticle.Source.Name)
+				log.Printf("Global |  - rows.id: %d\n", thisSource.id)
+				log.Printf("Global |  - rows.name: %s\n", thisSource.name)
 
 			}
-			log.Println("Closing rows resources.")
+			log.Println("Global | Closing rows resources.")
 			defer sourceRows.Close()
 
 			// the 'source' slide is empty if no rows are returned by the SELECT
 			if len(sources) == 0 {
-				log.Printf("No sources found for '%s'. Proceed with INSERT.", newsArticle.Source.Name)
+				log.Printf("Global | No sources found for '%s'. Proceed with INSERT.", newsArticle.Source.Name)
 
 				/* ** insertSource ** */
 				sourceID = myDB.InsertSource(newsArticle.Source.Name)
 			} else {
-				log.Println("The source already exists. No INSERT required.")
+				log.Println("Global | The source already exists. No INSERT required.")
 				sourceID = thisSource.id
 			}
 
@@ -239,7 +244,7 @@ func CountryFetchAndStore(myDB *data.DBClient, newsapi *news.Client, country, la
 
 	/* ********** Start with Italy ***************************************** */
 	log.Println("**********************************************************")
-	log.Println("Search ByCountry: ", country)
+	log.Println("ByCountry | Search :", country)
 	log.Println("**********************************************************")
 
 	// -- potentially can call a function
@@ -249,18 +254,18 @@ func CountryFetchAndStore(myDB *data.DBClient, newsapi *news.Client, country, la
 
 	results, err := newsapi.FetchNews("ByCountry", "", "1", country)
 	if err != nil {
-		log.Fatal("Error retrieving news => ", err)
+		log.Fatal("ByCountry | Error retrieving news => ", err)
 	}
 
-	log.Println("News collection completed.")
-	log.Printf("Total results retrieved for '%s': %v", country, results.TotalResults)
+	log.Println("ByCountry | News collection completed.")
+	log.Printf("ByCountry | Total results retrieved for '%s': %v", country, results.TotalResults)
 
 	log.Println("--------------------------------------------------------")
-	log.Println("Iterating on Articles.")
+	log.Println("ByCountry | Iterating on Articles.")
 	log.Println("--------------------------------------------------------")
 
 	for i, newsArticle := range results.Articles {
-		log.Printf(" >> Article #%d << | Title: '%s'", i+1, newsArticle.Title)
+		log.Printf("ByCountry |  >> Article #%d << | Title: '%s'", i+1, newsArticle.Title)
 
 		// there's nothing provided in the Sql package to check if Rows has no records inside
 		// so I define an empty slice and fill it in the iteration below
@@ -269,13 +274,13 @@ func CountryFetchAndStore(myDB *data.DBClient, newsapi *news.Client, country, la
 
 		/* ** Extract Domain ** */
 		// extract domain name from article URL. From https//www.techcrunch.com/zyx TO techcrunch.com
-		log.Println("URL: ", newsArticle.URL)
+		log.Println("ByCountry | URL: ", newsArticle.URL)
 		// cut the http(s) and www part from URL, if present
 		regexp := regexp.MustCompile(`http(s?)://(www.)?`)
 		cutURL := regexp.ReplaceAllString(newsArticle.URL, "")
 		components := strings.Split(cutURL, "/")
 		domain := components[0]
-		log.Println("Domain extracted from URL: ", domain)
+		log.Println("ByCountry | Domain extracted from URL: ", domain)
 
 		/* ** Check Domains ** */
 		domainRows := myDB.GetDomainsByName(domain)
@@ -286,26 +291,26 @@ func CountryFetchAndStore(myDB *data.DBClient, newsapi *news.Client, country, la
 			// The number of values in dest must be the same as the number of columns in Rows.
 			err := domainRows.Scan(&thisDomain.id, &thisDomain.name, &thisDomain.favourite)
 			if err != nil {
-				log.Fatal("Error on reading SQL SELECT results => ", err)
+				log.Fatal("ByCountry | Error on reading SQL SELECT results => ", err)
 			}
 			// fill the slice to check if there are rows later
 			domains = append(domains, thisDomain.name)
-			log.Printf("Records found for domain: '%s'", domain)
-			log.Printf(" - rows.id: %d\n", thisDomain.id)
-			log.Printf(" - rows.name: %s\n", thisDomain.name)
+			log.Printf("ByCountry | Records found for domain: '%s'", domain)
+			log.Printf("ByCountry |  - rows.id: %d\n", thisDomain.id)
+			log.Printf("ByCountry |  - rows.name: %s\n", thisDomain.name)
 
 		}
-		log.Println("Closing rows resources.")
+		log.Println("ByCountry | Closing rows resources.")
 		defer domainRows.Close()
 
 		// the 'source' slide is empty if no rows are returned by the SELECT
 		if len(domains) == 0 {
-			log.Printf("No domains found for '%s'. Proceed with INSERT.", domain)
+			log.Printf("ByCountry | No domains found for '%s'. Proceed with INSERT.", domain)
 
 			/* ** insertDomain ** */
 			domainID = myDB.InsertDomain(domain)
 		} else {
-			log.Println("The domain already exists. No INSERT required.")
+			log.Println("ByCountry | The domain already exists. No INSERT required.")
 			domainID = thisDomain.id
 		}
 
@@ -318,26 +323,26 @@ func CountryFetchAndStore(myDB *data.DBClient, newsapi *news.Client, country, la
 			// The number of values in dest must be the same as the number of columns in Rows.
 			err := sourceRows.Scan(&thisSource.id, &thisSource.name)
 			if err != nil {
-				log.Fatal("Error on reading SQL SELECT results => ", err)
+				log.Fatal("ByCountry | Error on reading SQL SELECT results => ", err)
 			}
 			// fill the slice to check if there are rows later
 			sources = append(sources, thisSource.name)
-			log.Printf("Records found for source: '%s'", newsArticle.Source.Name)
-			log.Printf(" - rows.id: %d\n", thisSource.id)
-			log.Printf(" - rows.name: %s\n", thisSource.name)
+			log.Printf("ByCountry | Records found for source: '%s'", newsArticle.Source.Name)
+			log.Printf("ByCountry |  - rows.id: %d\n", thisSource.id)
+			log.Printf("ByCountry |  - rows.name: %s\n", thisSource.name)
 
 		}
-		log.Println("Closing rows resources.")
+		log.Println("ByCountry | Closing rows resources.")
 		defer sourceRows.Close()
 
 		// the 'source' slide is empty if no rows are returned by the SELECT
 		if len(sources) == 0 {
-			log.Printf("No sources found for '%s'. Proceed with INSERT.", newsArticle.Source.Name)
+			log.Printf("ByCountry | No sources found for '%s'. Proceed with INSERT.", newsArticle.Source.Name)
 
 			/* ** insertSource ** */
 			sourceID = myDB.InsertSource(newsArticle.Source.Name)
 		} else {
-			log.Println("The source already exists. No INSERT required.")
+			log.Println("ByCountry | The source already exists. No INSERT required.")
 			sourceID = thisSource.id
 		}
 

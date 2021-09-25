@@ -50,6 +50,14 @@ type Domain struct {
 
 var thisDomain = Domain{}
 
+type FavouriteFeed struct {
+	id        int
+	name      string
+	favourite bool
+}
+
+var thisFeed = FavouriteFeed{}
+
 func main() {
 
 	// ** Entire Block Schedule to run every 3 hours **
@@ -173,28 +181,28 @@ func GlobalFetchAndStore(myDB *data.DBClient, newsapi *news.Client) {
 		domainRows := myDB.GetDomains(domainsList)
 	*/
 
-	domainRows := myDB.GetFavourites()
+	feedRows := myDB.GetFavourites()
 
-	for domainRows.Next() {
+	for feedRows.Next() {
 
 		// Scan copies the columns in the current row into the values pointed at by dest.
 		// The number of values in dest must be the same as the number of columns in Rows.
-		err := domainRows.Scan(&thisDomain.id, &thisDomain.name, &thisDomain.favourite)
+		err := feedRows.Scan(&thisFeed.id, &thisFeed.name, &thisFeed.favourite)
 		if err != nil {
 			log.Fatal("Global | Error on reading SQL SELECT results => ", err)
 		}
 
 		log.Println("**********************************************************")
-		log.Println("Global | Search ByDomain: ", thisDomain.name)
+		log.Println("Global | Search ByDomain: ", thisFeed.name)
 		log.Println("**********************************************************")
 
-		results, err := newsapi.FetchNews("Global", "", "1", thisDomain.name)
+		results, err := newsapi.FetchNews("Global", "", "1", thisFeed.name)
 		if err != nil {
 			log.Fatal("Global | Error retrieving news => ", err)
 		}
 
 		log.Println("Global | News collection completed.")
-		log.Printf("Global | Total results retrieved for '%s': %v", thisDomain.name, results.TotalResults)
+		log.Printf("Global | Total results retrieved for '%s': %v", thisFeed.name, results.TotalResults)
 
 		log.Println("--------------------------------------------------------")
 		log.Println("Global | Iterating on Articles.")
@@ -206,7 +214,7 @@ func GlobalFetchAndStore(myDB *data.DBClient, newsapi *news.Client) {
 			sources := make([]string, 0)
 
 			// exists for sure
-			domainID := myDB.GetDomainID(thisDomain.name)
+			domainID := myDB.GetDomainID(thisFeed.name)
 
 			/* ** Check Sources ** */
 			sourceRows := myDB.GetSourcesByName(newsArticle.Source.Name)

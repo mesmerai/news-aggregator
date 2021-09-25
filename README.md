@@ -73,6 +73,11 @@ sudo docker-compose up
 sudo docker-compose down
 ```
 
+(Optional) If you want to delete the postgres persistent volume as well:
+```
+sudo docker volume rm news-aggregator_pgdat
+```
+
 Done.   
 No other steps required.       
 

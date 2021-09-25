@@ -69,14 +69,14 @@ func main() {
 
 	//ctab.MustAddJob("* * * * *", FetchItaly)
 	// Run every 3 hours
-	//ctab.MustAddJob("* */3 * * *", FetchItaly)
-	//ctab.MustAddJob("* */3 * * *", FetchAustralia)
-	//ctab.MustAddJob("* */3 * * *", FetchGlobal)
+	ctab.MustAddJob("* */3 * * *", FetchItaly)
+	ctab.MustAddJob("* */3 * * *", FetchAustralia)
+	ctab.MustAddJob("* */3 * * *", FetchGlobal)
 
 	// troubleshooting: run every 30 minutes
-	ctab.MustAddJob("*/30 * * * *", FetchItaly)
-	ctab.MustAddJob("*/30 * * * *", FetchAustralia)
-	ctab.MustAddJob("*/30 * * * *", FetchGlobal)
+	//ctab.MustAddJob("*/30 * * * *", FetchItaly)
+	//ctab.MustAddJob("*/30 * * * *", FetchAustralia)
+	//ctab.MustAddJob("*/30 * * * *", FetchGlobal)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)

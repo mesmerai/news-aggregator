@@ -1,5 +1,13 @@
 FROM golang:1.17.1-bullseye
 
+# tzdata for timzone
+RUN apt-get update -y
+RUN apt-get install -y tzdata
+
+# timezone env with default Sydney
+ENV TZ Australia/Sydney
+
+
 ARG NEWS_API_KEY=local
 ENV NEWS_API_KEY ${NEWS_API_KEY}
 
@@ -9,8 +17,7 @@ ENV DB_PASSWORD ${DB_PASSWORD}
 ARG DB_HOST=local
 ENV DB_HOST ${DB_HOST}
 
-#RUN source /etc/os-release && echo "$NAME-$VERSION_ID"
-#RUN apt-get -y update
+
 
 WORKDIR /app
 COPY . .

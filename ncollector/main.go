@@ -68,10 +68,15 @@ func main() {
 	ctab := crontab.New() // create cron table
 
 	//ctab.MustAddJob("* * * * *", FetchItaly)
-	// Run every 3 hours
-	ctab.MustAddJob("* */3 * * *", FetchItaly)
-	ctab.MustAddJob("* */3 * * *", FetchAustralia)
-	ctab.MustAddJob("* */3 * * *", FetchGlobal)
+	// Run every 3 hours - Does not work, run every minute!
+	//ctab.MustAddJob("* */3 * * *", FetchItaly)
+	//ctab.MustAddJob("* */3 * * *", FetchAustralia)
+	//ctab.MustAddJob("* */3 * * *", FetchGlobal)
+
+	// run at 9:10, 12:10, 15:10 etc..
+	ctab.MustAddJob("10 9,12,15 * * *", FetchItaly)
+	ctab.MustAddJob("15 9,12,15 * * *", FetchAustralia)
+	ctab.MustAddJob("20 9,12,15 * * *", FetchGlobal)
 
 	// troubleshooting: run every 30 minutes
 	//ctab.MustAddJob("*/30 * * * *", FetchItaly)
@@ -90,6 +95,10 @@ func main() {
 
 func FetchGlobal() {
 
+	log.Println("==========================================================")
+	log.Println("Global | News Collection Start")
+	log.Println("==========================================================")
+
 	/* ** News Client ** */
 	myClient := &http.Client{Timeout: 10 * time.Second}
 	newsapi := news.NewClient(myClient, news_api_key, 100)
@@ -101,10 +110,6 @@ func FetchGlobal() {
 	defer myDB.Database.Close()
 
 	log.Println("Global | Closing DB resources.")
-
-	log.Println("==========================================================")
-	log.Println("Global | Initiate News collection")
-	log.Println("==========================================================")
 
 	// restricted list of domains REQUIRED to not reach the API call daily LIMIT of 50 API calls in 12 hours
 	//dList := []string{"corriere.it", "ansa.it", "rainews.it"}
@@ -129,9 +134,16 @@ func FetchGlobal() {
 
 	GlobalFetchAndStore(myDB, newsapi)
 
+	log.Println("Global | News Collection End")
+
 }
 
 func FetchItaly() {
+
+	log.Println("==========================================================")
+	log.Println("ByCountry | News Collection Start")
+	log.Println("==========================================================")
+
 	/* ** News Client ** */
 	myClient := &http.Client{Timeout: 10 * time.Second}
 	newsapi := news.NewClient(myClient, news_api_key, 100)
@@ -144,15 +156,18 @@ func FetchItaly() {
 
 	log.Println("ByCountry | Closing DB resources.")
 
-	log.Println("==========================================================")
-	log.Println("ByCountry | Initiate News collection")
-	log.Println("==========================================================")
-
 	CountryFetchAndStore(myDB, newsapi, "Italy", "Italian")
+
+	log.Println("ByCountry | News Collection End")
 
 }
 
 func FetchAustralia() {
+
+	log.Println("==========================================================")
+	log.Println("ByCountry | News Collection Start")
+	log.Println("==========================================================")
+
 	/* ** News Client ** */
 	myClient := &http.Client{Timeout: 10 * time.Second}
 	newsapi := news.NewClient(myClient, news_api_key, 100)
@@ -165,11 +180,9 @@ func FetchAustralia() {
 
 	log.Println("ByCountry | Closing DB resources.")
 
-	log.Println("==========================================================")
-	log.Println("ByCountry | Initiate News collection")
-	log.Println("==========================================================")
-
 	CountryFetchAndStore(myDB, newsapi, "Australia", "English")
+
+	log.Println("ByCountry | News Collection End")
 
 }
 
@@ -201,7 +214,6 @@ func GlobalFetchAndStore(myDB *data.DBClient, newsapi *news.Client) {
 			log.Fatal("Global | Error retrieving news => ", err)
 		}
 
-		log.Println("Global | News collection completed.")
 		log.Printf("Global | Total results retrieved for '%s': %v", thisFeed.name, results.TotalResults)
 
 		log.Println("--------------------------------------------------------")
@@ -209,7 +221,7 @@ func GlobalFetchAndStore(myDB *data.DBClient, newsapi *news.Client) {
 		log.Println("--------------------------------------------------------")
 
 		for i, newsArticle := range results.Articles {
-			log.Printf(" >> Article #%d << | Title: '%s'", i+1, newsArticle.Title)
+			log.Printf("Global | Article #%d | Title: '%s'", i+1, newsArticle.Title)
 
 			sources := make([]string, 0)
 
@@ -276,7 +288,6 @@ func CountryFetchAndStore(myDB *data.DBClient, newsapi *news.Client, country, la
 		log.Fatal("ByCountry | Error retrieving news => ", err)
 	}
 
-	log.Println("ByCountry | News collection completed.")
 	log.Printf("ByCountry | Total results retrieved for '%s': %v", country, results.TotalResults)
 
 	log.Println("--------------------------------------------------------")
@@ -284,7 +295,7 @@ func CountryFetchAndStore(myDB *data.DBClient, newsapi *news.Client, country, la
 	log.Println("--------------------------------------------------------")
 
 	for i, newsArticle := range results.Articles {
-		log.Printf("ByCountry |  >> Article #%d << | Title: '%s'", i+1, newsArticle.Title)
+		log.Printf("ByCountry |  Article #%d | Title: '%s'", i+1, newsArticle.Title)
 
 		// there's nothing provided in the Sql package to check if Rows has no records inside
 		// so I define an empty slice and fill it in the iteration below

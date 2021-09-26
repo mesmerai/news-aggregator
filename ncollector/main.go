@@ -74,9 +74,9 @@ func main() {
 	//ctab.MustAddJob("* */3 * * *", FetchGlobal)
 
 	// run at 9:10, 12:10, 15:10 etc..
-	ctab.MustAddJob("10 9,12,15 * * *", FetchItaly)
-	ctab.MustAddJob("15 9,12,15 * * *", FetchAustralia)
-	ctab.MustAddJob("20 9,12,15 * * *", FetchGlobal)
+	ctab.MustAddJob("10 0,3,6,9,12,15,18,21 * * *", FetchItaly)
+	ctab.MustAddJob("15 0,3,6,9,12,15,18,21 * * *", FetchAustralia)
+	ctab.MustAddJob("20 0,3,6,9,12,15,18,21 * * *", FetchGlobal)
 
 	// troubleshooting: run every 30 minutes
 	//ctab.MustAddJob("*/30 * * * *", FetchItaly)

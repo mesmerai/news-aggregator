@@ -50,13 +50,10 @@ html {
 }
 
 
-/* Clear floats after the columns
-.row:after {
-  content: "";
-  display: table;
-  clear: both;
+td, th {
+  text-align: left;
+  padding: 2px 18px 0px 2px;
 }
- */
 
 *, *::before, *::after {
   box-sizing: inherit;

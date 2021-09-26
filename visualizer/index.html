@@ -121,8 +121,22 @@
         </section>
       </div>
       <div class="column right">
-        <p>Column Right</p>
-        <p> ..</p>
+        <div class="window">
+          {{ if .ArticlesPerFeed }}
+          <table>
+            <tr>
+              <th>Feed</th>
+              <th>Articles</th>
+            </tr>
+            {{ range.ArticlesPerFeed }}
+            <tr>
+              <td>{{ .FeedName }}</td>
+              <td>{{ .ArticlesCount }}</td>
+            </tr>
+            {{ end }}
+          </table>
+          {{ end }}
+        </div>
       </div>
   </div>
   </main>

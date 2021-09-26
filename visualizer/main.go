@@ -32,12 +32,13 @@ var myDB *data.DBClient
 var tmpl = template.Must(template.ParseFiles("./index.html"))
 
 type Data struct {
-	Query         string
-	NextPage      int
-	TotalPages    int
-	Results       *data.Results
-	Favourites    *data.FavouriteDomains
-	NotFavourites *data.NotFavouriteDomains
+	Query           string
+	NextPage        int
+	TotalPages      int
+	Results         *data.Results
+	Favourites      *data.FavouriteDomains
+	NotFavourites   *data.NotFavouriteDomains
+	ArticlesPerFeed []data.ArticlePerFeed
 }
 
 var pageData Data
@@ -79,7 +80,9 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	var notFavResults *data.NotFavouriteDomains
 	var favCount, notFavCount int
 
-	// ** retrieve Feeds to populate the menu on the left side */
+	var articlesPerFeed []data.ArticlePerFeed
+
+	// ** retrieve Feeds to populate the menu on the left side **
 
 	favCount = myDB.CountFavouriteDomains()
 	favResults = myDB.GetFavouriteDomains()
@@ -89,14 +92,19 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	notFavResults = myDB.GetNotFavouriteDomains()
 	notFavResults.Count = notFavCount
 
+	// ** articlesPerFeed for the menu on the right **
+
+	articlesPerFeed = myDB.CountArticlesGroupByFavourites() // should return a []ArticlePerFeed having .FeedName and .ArticlesCount
+
 	thisData := &pageData
 	*thisData = Data{
-		Query:         pageData.Query,
-		NextPage:      pageData.NextPage,
-		TotalPages:    pageData.TotalPages,
-		Results:       pageData.Results,
-		Favourites:    favResults,
-		NotFavourites: notFavResults,
+		Query:           pageData.Query,
+		NextPage:        pageData.NextPage,
+		TotalPages:      pageData.TotalPages,
+		Results:         pageData.Results,
+		Favourites:      favResults,
+		NotFavourites:   notFavResults,
+		ArticlesPerFeed: articlesPerFeed,
 	}
 
 	// define empty intermediate buffer
@@ -277,12 +285,13 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 	thisData := &pageData
 	*thisData = Data{
-		Query:         searchQuery,
-		NextPage:      nextPage,
-		TotalPages:    tot,
-		Results:       results,
-		Favourites:    pageData.Favourites,
-		NotFavourites: pageData.NotFavourites,
+		Query:           searchQuery,
+		NextPage:        nextPage,
+		TotalPages:      tot,
+		Results:         results,
+		Favourites:      pageData.Favourites,
+		NotFavourites:   pageData.NotFavourites,
+		ArticlesPerFeed: pageData.ArticlesPerFeed,
 	}
 
 	/*

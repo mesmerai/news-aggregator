@@ -39,6 +39,13 @@ type NotFavouriteDomains struct {
 	Count   int
 }
 
+type ArticlePerFeed struct {
+	ArticlesCount int
+	FeedName      string
+}
+
+//var ArticlesPerFeed []ArticlesPerFeed
+
 /* Article structs */
 type Article struct {
 	ID          string
@@ -239,6 +246,42 @@ func (db *DBClient) CountArticlesByCountry(country, word string) int {
 	}
 
 	return id
+
+}
+
+func (db *DBClient) CountArticlesGroupByFavourites() []ArticlePerFeed {
+
+	log.Printf("Initiate CountArticlesGroupByFavourites")
+
+	var apfSlice []ArticlePerFeed
+
+	var selectRows *sql.Rows
+	var selectErr error
+	sqlSelect := `SELECT COUNT(a) articlesCount, d.name feed 
+	FROM articles a, domains d 
+	WHERE a.domain_id = d.id AND d.favourite IS TRUE 
+	GROUP BY d.name 
+	ORDER by feed ASC;`
+
+	selectRows, selectErr = db.Database.Query(sqlSelect)
+
+	if selectErr != nil {
+		log.Fatal("Error on SQL SELECT => ", selectErr)
+	}
+
+	for selectRows.Next() {
+
+		var apf ArticlePerFeed
+
+		err := selectRows.Scan(&apf.ArticlesCount, &apf.FeedName)
+		if err != nil {
+			log.Fatal("Error on reading SQL SELECT results => ", err)
+		}
+
+		apfSlice = append(apfSlice, apf)
+	}
+
+	return apfSlice
 
 }
 

@@ -29,9 +29,10 @@ What it does/provides:
 - search of articles with or without a keyword 
 - search of articles per country: Italy, Australia or Global  
 - management of Favourite Feeds from the left side menus (config saved in the DB)
+- view of number of articles ingested per Favourite Feed on the right side
 
 
-A that's how it looks like:  
+That's how it looks like:  
 ![News Aggregator](./images/news-aggregator.png)
 
 # How To Start the Application 

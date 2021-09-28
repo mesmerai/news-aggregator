@@ -125,6 +125,7 @@ func (c *Client) FetchSources() {
 	// checking ret code, http.StatusOk is a const from http pkg
 	if resp.StatusCode != http.StatusOK {
 		//return nil, fmt.Errorf(string(body))
+		log.Fatal("Error Fetching News. Status Code: ", resp.StatusCode)
 	}
 }
 

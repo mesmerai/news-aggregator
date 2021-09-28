@@ -262,8 +262,9 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		results.TotalResults = count
 	default:
-
+		log.Fatal("Not a valid search parameter")
 	}
+
 	// we convert page into int first
 	nextPage, err := strconv.Atoi(page)
 	if err != nil {
@@ -293,15 +294,6 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		NotFavourites:   pageData.NotFavourites,
 		ArticlesPerFeed: pageData.ArticlesPerFeed,
 	}
-
-	/*
-		data := &Data{
-			Query:      searchQuery,
-			NextPage:   nextPage,
-			TotalPages: tot,
-			Results:    results,
-		}
-	*/
 
 	// this block is to increment NextPage
 	if !thisData.IsLastPage() {
@@ -356,7 +348,6 @@ func main() {
 	mux.Handle("/assets/", http.StripPrefix("/assets/", fs))
 
 	// handler for /search
-	// ** Closure over newsapi parameter
 	mux.HandleFunc("/search", searchHandler)
 
 	mux.HandleFunc("/addFeeds", addFeedsHandler)

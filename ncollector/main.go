@@ -74,9 +74,9 @@ func main() {
 	//ctab.MustAddJob("* */3 * * *", FetchGlobal)
 
 	// run at 9:10, 12:10, 15:10 etc..
-	ctab.MustAddJob("10 0,3,6,9,12,15,18,21 * * *", FetchItaly)
-	ctab.MustAddJob("15 0,3,6,9,12,15,18,21 * * *", FetchAustralia)
-	ctab.MustAddJob("20 0,3,6,9,12,15,18,21 * * *", FetchGlobal)
+	ctab.MustAddJob("0 1,4,7,10,13,16,19,22 * * *", FetchItaly)
+	ctab.MustAddJob("5 1,4,7,10,13,16,19,22 * * *", FetchAustralia)
+	ctab.MustAddJob("10 1,4,7,10,13,16,19,22 * * *", FetchGlobal)
 
 	// troubleshooting: run every 30 minutes
 	//ctab.MustAddJob("*/30 * * * *", FetchItaly)
@@ -100,7 +100,7 @@ func FetchGlobal() {
 	log.Println("==========================================================")
 
 	/* ** News Client ** */
-	myClient := &http.Client{Timeout: 10 * time.Second}
+	myClient := &http.Client{Timeout: 30 * time.Second}
 	newsapi := news.NewClient(myClient, news_api_key, 100)
 
 	/* ** DB Conn ** */
@@ -145,7 +145,7 @@ func FetchItaly() {
 	log.Println("==========================================================")
 
 	/* ** News Client ** */
-	myClient := &http.Client{Timeout: 10 * time.Second}
+	myClient := &http.Client{Timeout: 30 * time.Second}
 	newsapi := news.NewClient(myClient, news_api_key, 100)
 
 	/* ** DB Conn ** */
@@ -169,7 +169,7 @@ func FetchAustralia() {
 	log.Println("==========================================================")
 
 	/* ** News Client ** */
-	myClient := &http.Client{Timeout: 10 * time.Second}
+	myClient := &http.Client{Timeout: 30 * time.Second}
 	newsapi := news.NewClient(myClient, news_api_key, 100)
 
 	/* ** DB Conn ** */

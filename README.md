@@ -58,7 +58,7 @@ export DB_HOST="localhost"
 ```
 
 
-## Start Everything with Docker Compose
+## Method 1 | Deploy Locally with Docker Compose
 Build
 ```
 sudo docker-compose build --build-arg NEWS_API_KEY="${NEWS_API_KEY}" --build-arg DB_PASSWORD="${DB_PASSWORD}"  --build-arg DB_HOST="${DB_HOST}"
@@ -81,6 +81,103 @@ sudo docker volume rm news-aggregator_pgdata
 
 Done.   
 No other steps required.       
+
+
+## Method 2 | Deploy on GCP/GKE (WIP)
+
+### Requirements   
+- Install ```terraform, google-cloud-sdk (gcloud), kubectl```.       
+- Create GCP project and service account withing the project
+- Link the project to a billing account from GCP console
+- Set the  ```GOOGLE_APPLICATION_CREDENTIALS``` env variable for terraform to point to service account credentials 
+```
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/my/creds.json"
+```
+
+### Create GCP Resources
+
+Folder ```terraform/gke/```.   
+
+Enable Compute Engine APIs and Kubernetes Engine APIs.
+```
+gcloud services enable compute.googleapis.com 
+gcloud services enable container.googleapis.com
+
+-- list all 
+gcloud services list --available
+```
+
+Terraform plan and apply:
+```
+terraform plan
+terraform apply -auto-approve
+```
+
+Cluster info are returned:
+```
+kubernetes_cluster_host = "<IP>"
+kubernetes_cluster_name = "<cluster-name>"
+project_id = "<roject-id>"
+region = "<region>"
+```
+
+Get cluster credentials:
+```
+-- regional cluster
+gcloud container clusters get-credentials $(terraform output -raw kubernetes_cluster_name) --region $(terraform output -raw region)
+
+-- zonal cluster
+gcloud container clusters get-credentials $(terraform output -raw kubernetes_cluster_name) --zone $(terraform output -raw zone)
+```
+
+### Test k8s Definitions
+
+Folder ```k8s/dashboard```.   
+
+```
+-- create dashboard
+kubectl app -f kubernetes-dashboard.yaml 
+kubectl proxy
+
+-- create dashboard rbac
+kubectl app -f kubernetes-dashboard-admin.rbac.yaml 
+
+-- retrieve secret
+kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep service-controller-token | awk '{print $1}')
+
+-- access to dashboard  (copy and paste the Token)
+http://127.0.0.1:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+```
+
+
+### Shutdown GCP Resources
+```
+terraform destroy -auto-approve
+```
+
+
+
+### Useful k8s commands:
+```
+-- list config 
+kubectl config view
+
+-- namespaces
+kubectl get ns
+
+-- services
+kubectl get service
+``
+
+
+
+
+
+
+
+
+
+~~``terraform apply -var="db_password=${DB_PASSWORD}"``~~
 
 
 

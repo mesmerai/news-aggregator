@@ -156,7 +156,6 @@ terraform destroy -auto-approve
 ```
 
 
-
 ### Useful k8s commands:
 ```
 -- list config 
@@ -167,14 +166,7 @@ kubectl get ns
 
 -- services
 kubectl get service
-``
-
-
-
-
-
-
-
+```
 
 
 ~~``terraform apply -var="db_password=${DB_PASSWORD}"``~~

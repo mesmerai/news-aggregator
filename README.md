@@ -181,7 +181,7 @@ kubectl apply -f visualizer-service.yaml
 
 Get the External IP from the Service and browse.   
 
-### Shutdown GCP Resources
+## Shutdown Everything
 
 Folder ```terraform/gke/```. 
 ```

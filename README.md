@@ -85,11 +85,11 @@ No other steps required.
 
 # Method 2 | Deploy and Run in GCP/GKE 
 
-First, set the Environment as above.  
+First, set the Environment variables as above.  
 
 ## Requirements   
 - Install ```terraform, google-cloud-sdk (gcloud), kubectl```.       
-- Create GCP project and service account withing the project
+- Create GCP project and service account within the project
 - Link the project to a billing account from GCP console
 - Set the  ```GOOGLE_APPLICATION_CREDENTIALS``` env variable for terraform to point to service account credentials 
 ```

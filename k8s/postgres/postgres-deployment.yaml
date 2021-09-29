@@ -38,8 +38,13 @@ spec:
         volumeMounts: 
           - mountPath: /var/lib/postgresql/data
             name: postgresdb
+          - mountPath: /docker-entrypoint-initdb.d
+            name: postgres-initdb
       volumes: 
         - name: postgresdb
           persistentVolumeClaim: 
             claimName: news-postgres-pvc
+        - name: postgres-initdb
+          configMap: 
+            name: pg-initdb
 

@@ -35,7 +35,7 @@ What it does/provides:
 That's how it looks like:  
 ![News Aggregator](./images/news-aggregator.png)
 
-# Method 1 | Start the application with docker-compose
+# Method 1 | Start all with docker-compose
 
 ## Setup the Environment 
 
@@ -83,7 +83,7 @@ Done.
 No other steps required.       
 
 
-# Method 2 | Deploy to GCP/GKE (WIP)
+# Method 2 | Deploy and Run in GCP/GKE (WIP)
 
 ## Requirements   
 - Install ```terraform, google-cloud-sdk (gcloud), kubectl```.       
@@ -98,7 +98,7 @@ export GOOGLE_APPLICATION_CREDENTIALS="/path/to/my/creds.json"
 
 Folder ```terraform/gke/```.   
 
-Enable Compute Engine APIs and Kubernetes Engine APIs.
+Requires to enable Compute Engine APIs and Kubernetes Engine APIs.
 ```
 gcloud services enable compute.googleapis.com 
 gcloud services enable container.googleapis.com
@@ -113,14 +113,6 @@ terraform plan
 terraform apply -auto-approve
 ```
 
-Cluster info are returned:
-```
-kubernetes_cluster_host = "<IP>"
-kubernetes_cluster_name = "<cluster-name>"
-project_id = "<roject-id>"
-region = "<region>"
-```
-
 Get cluster credentials:
 ```
 -- regional cluster
@@ -130,12 +122,13 @@ gcloud container clusters get-credentials $(terraform output -raw kubernetes_clu
 gcloud container clusters get-credentials $(terraform output -raw kubernetes_cluster_name) --zone $(terraform output -raw zone)
 ```
 
-## Create Postgres Service in GKE
+## Create Postgres in GKE
 
 Folder ```k8s/postgres/```.   
 
 ```
 kubectl apply -f postgres-pv.yaml 
+kubectl create configmap pg-initdb --from-file ../../db/CreateTables.sql 
 kubectl apply -f postgres-deployment.yaml 
 kubectl apply -f postgres-service.yaml
 ```

@@ -85,6 +85,8 @@ No other steps required.
 
 # Method 2 | Deploy and Run in GCP/GKE 
 
+First, set the Environment as above.  
+
 ## Requirements   
 - Install ```terraform, google-cloud-sdk (gcloud), kubectl```.       
 - Create GCP project and service account withing the project

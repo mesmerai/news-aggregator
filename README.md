@@ -83,7 +83,7 @@ Done.
 No other steps required.       
 
 
-# Method 2 | Deploy and Run in GCP/GKE (WIP)
+# Method 2 | Deploy and Run in GCP/GKE 
 
 ## Requirements   
 - Install ```terraform, google-cloud-sdk (gcloud), kubectl```.       
@@ -173,7 +173,8 @@ sudo docker push mesmerai/visualizer
 
 Folder ```k8s/visualizer/```:
 ```
-
+kubectl apply -f visualizer-deployment.yaml 
+kubectl apply -f visualizer-service.yaml
 ```
 
 ### Shutdown GCP Resources

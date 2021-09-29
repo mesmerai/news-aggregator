@@ -1,0 +1,45 @@
+# The .spec.selector field defines how the Deployment finds which Pods to manage.
+# The .spec.template fiels is where the label is defined with containers details (Pod template) 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: news-postgres-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: news-postgres
+  template:
+    metadata:
+      labels:
+        app: news-postgres
+    spec:
+      containers: 
+      - name: postgres
+        image: postgres:13.4-bullseye
+        resources:
+          limits:
+            cpu: 1
+            memory: 2Gi
+          requests:
+            cpu: 1
+            memory: 2Gi
+        ports:
+          - containerPort: 5432    
+        env:
+          - name: POSTGRES_DB
+            value: news
+          - name: POSTGRES_USER
+            value: news_db_user
+          - name: POSTGRES_PASSWORD
+            value: temp123.
+          - name: PGDATA
+            value: /var/lib/postgresql/data/pgdata
+        volumeMounts: 
+          - mountPath: /var/lib/postgresql/data
+            name: postgresdb
+      volumes: 
+        - name: postgresdb
+          persistentVolumeClaim: 
+            claimName: news-postgres-pvc
+

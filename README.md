@@ -35,7 +35,7 @@ What it does/provides:
 That's how it looks like:  
 ![News Aggregator](./images/news-aggregator.png)
 
-# How To Start the Application 
+# Method 1 | Start the application with docker-compose
 
 ## Setup the Environment 
 
@@ -58,7 +58,7 @@ export DB_HOST="localhost"
 ```
 
 
-## Method 1 | Deploy Locally with Docker Compose
+## Run docker-compose to spin up the containers
 Build
 ```
 sudo docker-compose build --build-arg NEWS_API_KEY="${NEWS_API_KEY}" --build-arg DB_PASSWORD="${DB_PASSWORD}"  --build-arg DB_HOST="${DB_HOST}"
@@ -83,9 +83,9 @@ Done.
 No other steps required.       
 
 
-## Method 2 | Deploy on GCP/GKE (WIP)
+# Method 2 | Deploy to GCP/GKE (WIP)
 
-### Requirements   
+## Requirements   
 - Install ```terraform, google-cloud-sdk (gcloud), kubectl```.       
 - Create GCP project and service account withing the project
 - Link the project to a billing account from GCP console
@@ -94,7 +94,7 @@ No other steps required.
 export GOOGLE_APPLICATION_CREDENTIALS="/path/to/my/creds.json"
 ```
 
-### Create GCP Resources
+## Create GCP/GKE Resources
 
 Folder ```terraform/gke/```.   
 
@@ -130,7 +130,26 @@ gcloud container clusters get-credentials $(terraform output -raw kubernetes_clu
 gcloud container clusters get-credentials $(terraform output -raw kubernetes_cluster_name) --zone $(terraform output -raw zone)
 ```
 
-### Test k8s Definitions
+## Create Postgres Service in GKE
+
+Folder ```k8s/postgres/```.   
+
+```
+kubectl apply -f postgres-pv.yaml 
+kubectl apply -f postgres-deployment.yaml 
+kubectl apply -f postgres-service.yaml
+```
+
+Access DB to check.   
+```
+POD=`kubectl get pods -l app=news-postgres | grep -v NAME | awk '{print $1}'`
+
+kubectl exec -it $POD -- psql -h localhost -p 5432 -U news_db_user -d news -W
+```
+
+
+
+### (Optional, just a test) Test k8s Definitions
 
 Folder ```k8s/dashboard```.   
 
@@ -157,15 +176,31 @@ terraform destroy -auto-approve
 
 
 ### Useful k8s commands:
+
+Config
 ```
 -- list config 
 kubectl config view
 
+-- delete
+kubectl config delete-cluster <cluster-name>
+kubectl config delete-context <context-name>
+```
+
+k8s
+```
 -- namespaces
 kubectl get ns
 
 -- services
 kubectl get service
+```
+
+Troubleshooting
+```
+kubectl get pods
+kubectl describe pod <pod-name>
+kubectl logs <pod-name>
 ```
 
 
@@ -495,3 +530,19 @@ Error connecting to DB => dial tcp: lookup local on 127.0.0.11:53: no such host
 
 *Fix*      
 Solved with networks and make sure you pass the build param ```--build-arg DB_HOST=db``` to docker-compose build.
+
+
+*Error*   
+
+Pod failed with Status ```CrashLoopBackOff```.  
+Event ```Back-off restarting failed container```.  
+```
+-- Pod logs
+initdb: error: directory "/var/lib/postgresql/data" exists but is not empty
+It contains a lost+found directory, perhaps due to it being a mount point.
+Using a mount point directly as the data directory is not recommended.
+Create a subdirectory under the mount point.
+```
+
+*Fix*   
+Solved by assigning PGDATA value different than mount point.   

@@ -1,0 +1,14 @@
+# The Service targets the 5432 port of Pods with label defined in .spec.selector
+# Kubernetes assigns this Service an IP address (sometimes called the "cluster IP"), which is used by the Service proxies
+# we set 'clusterIP: None' as we don't want to expose the DB outside the cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: news-postgres-service
+spec:
+  selector:
+    app: news-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+  clusterIP: None

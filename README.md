@@ -124,7 +124,12 @@ gcloud container clusters get-credentials $(terraform output -raw kubernetes_clu
 
 ## Create Postgres in GKE
 
-Folder ```k8s/postgres/```.   
+Create **secrets** first:
+```
+kubectl create secret generic news-secrets --from-literal=apikey="${NEWS_API_KEY}" --from-literal=dbpassword="${DB_PASSWORD}"
+```
+
+Then, from folder ```k8s/postgres/```.   
 
 ```
 kubectl apply -f postgres-pv.yaml 
@@ -138,27 +143,6 @@ Access DB to check.
 POD=`kubectl get pods -l app=news-postgres | grep -v NAME | awk '{print $1}'`
 
 kubectl exec -it $POD -- psql -h localhost -p 5432 -U news_db_user -d news -W
-```
-
-
-
-### (Optional, just a test) Test k8s Definitions
-
-Folder ```k8s/dashboard```.   
-
-```
--- create dashboard
-kubectl app -f kubernetes-dashboard.yaml 
-kubectl proxy
-
--- create dashboard rbac
-kubectl app -f kubernetes-dashboard-admin.rbac.yaml 
-
--- retrieve secret
-kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep service-controller-token | awk '{print $1}')
-
--- access to dashboard  (copy and paste the Token)
-http://127.0.0.1:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
 ```
 
 
@@ -180,15 +164,6 @@ kubectl config delete-cluster <cluster-name>
 kubectl config delete-context <context-name>
 ```
 
-k8s
-```
--- namespaces
-kubectl get ns
-
--- services
-kubectl get service
-```
-
 Troubleshooting
 ```
 kubectl get pods
@@ -196,9 +171,37 @@ kubectl describe pod <pod-name>
 kubectl logs <pod-name>
 ```
 
+Secrets
+```
+kubectl get secrets
+kubectl describe secrets <secret-name>
+kubectl get secret <secret-name> -o jsonpath='{.data}'
+
+-- then decode
+echo 'zyx123#$%' | base64 --decode
+
+```
 
 ~~``terraform apply -var="db_password=${DB_PASSWORD}"``~~
 
+### (Optional) Test k8s Definitions with Dashboard
+
+Folder ```k8s/dashboard```.   
+
+```
+-- create dashboard
+kubectl app -f kubernetes-dashboard.yaml 
+kubectl proxy
+
+-- create dashboard rbac
+kubectl app -f kubernetes-dashboard-admin.rbac.yaml 
+
+-- retrieve secret
+kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep service-controller-token | awk '{print $1}')
+
+-- access to dashboard  (copy and paste the Token)
+http://127.0.0.1:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+```
 
 
 ## Alernative - Start Docker Images Alone

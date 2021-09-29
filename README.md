@@ -189,58 +189,6 @@ terraform destroy -auto-approve
 ```
 
 
-### Useful k8s commands:
-
-Config
-```
--- list config 
-kubectl config view
-
--- delete
-kubectl config delete-cluster <cluster-name>
-kubectl config delete-context <context-name>
-```
-
-Troubleshooting
-```
-kubectl get pods
-kubectl describe pod <pod-name>
-kubectl logs <pod-name>
-```
-
-Secrets
-```
-kubectl get secrets
-kubectl describe secrets <secret-name>
-kubectl get secret <secret-name> -o jsonpath='{.data}'
-
--- then decode
-echo 'zyx123#$%' | base64 --decode
-
-```
-
-~~``terraform apply -var="db_password=${DB_PASSWORD}"``~~
-
-### (Optional) Test k8s Definitions with Dashboard
-
-Folder ```k8s/dashboard```.   
-
-```
--- create dashboard
-kubectl app -f kubernetes-dashboard.yaml 
-kubectl proxy
-
--- create dashboard rbac
-kubectl app -f kubernetes-dashboard-admin.rbac.yaml 
-
--- retrieve secret
-kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep service-controller-token | awk '{print $1}')
-
--- access to dashboard  (copy and paste the Token)
-http://127.0.0.1:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
-```
-
-
 ## Alernative - Start Docker Images Alone
 
 ### Postgres Docker Image
@@ -384,7 +332,37 @@ git tag -l
 
 # Appendix
 
-## Useful Commands for Docker and Docker Compose
+## Useful Commands 
+
+### Kubernetes
+
+Config
+```
+-- list config 
+kubectl config view
+
+-- delete
+kubectl config delete-cluster <cluster-name>
+kubectl config delete-context <context-name>
+```
+
+Troubleshooting
+```
+kubectl get pods
+kubectl describe pod <pod-name>
+kubectl logs <pod-name>
+```
+
+Secrets
+```
+kubectl get secrets
+kubectl describe secrets <secret-name>
+kubectl get secret <secret-name> -o jsonpath='{.data}'
+
+-- then decode
+echo 'zyx123#$%' | base64 --decode
+
+```
 
 ### Docker
 
@@ -467,7 +445,6 @@ Start Docker
 
 
 
-
 ## Install Postgres (on Fedora 34)
 
 ```
@@ -544,6 +521,27 @@ Grant permissions to DB
 # GRANT CONNECT ON DATABASE news TO db_user;
 # GRANT USAGE ON SCHEMA public TO db_user;
 ```
+
+
+## K8s Dashboard
+
+Folder ```k8s/dashboard```.   
+
+```
+-- create dashboard
+kubectl app -f kubernetes-dashboard.yaml 
+kubectl proxy
+
+-- create dashboard rbac
+kubectl app -f kubernetes-dashboard-admin.rbac.yaml 
+
+-- retrieve secret
+kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep service-controller-token | awk '{print $1}')
+
+-- access to dashboard  (copy and paste the Token)
+http://127.0.0.1:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+```
+
 
 # Troubleshooting 
 

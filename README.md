@@ -109,7 +109,7 @@ gcloud services enable container.googleapis.com
 gcloud services list --available
 ```
 
-Terraform plan and apply:
+**Terraform** plan and apply:
 ```
 terraform plan
 terraform apply -auto-approve
@@ -132,7 +132,7 @@ kubectl create secret generic news-secrets --from-literal=apikey="${NEWS_API_KEY
 
 ## Deploy Postgres in GKE
 
-Then, from folder ```k8s/postgres/```.   
+From folder ```k8s/postgres/```.   
 
 ```
 kubectl apply -f postgres-pv.yaml 
@@ -182,6 +182,8 @@ kubectl apply -f visualizer-service.yaml
 Get the External IP from the Service and browse.   
 
 ### Shutdown GCP Resources
+
+Folder ```terraform/gke/```. 
 ```
 terraform destroy -auto-approve
 ```

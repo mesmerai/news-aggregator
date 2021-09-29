@@ -162,7 +162,7 @@ kubectl apply -f ncollector-deployment.yaml
 kubectl apply -f ncollector-service.yaml
 ```
 
-## Deploy ncollector in GKE
+## Deploy visualizer in GKE
 
 
 Folder ```visualizer/```.
@@ -176,6 +176,8 @@ Folder ```k8s/visualizer/```:
 kubectl apply -f visualizer-deployment.yaml 
 kubectl apply -f visualizer-service.yaml
 ```
+
+Get the External IP from the Service and browse.   
 
 ### Shutdown GCP Resources
 ```

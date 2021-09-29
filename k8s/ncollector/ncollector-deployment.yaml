@@ -1,0 +1,42 @@
+# The .spec.selector field defines how the Deployment finds which Pods to manage.
+# The .spec.template fiels is where the label is defined with containers details (Pod template) 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: news-ncollector-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: news-ncollector
+  template:
+    metadata:
+      labels:
+        app: news-ncollector
+    spec:
+      containers: 
+      - name: ncollector
+        image: mesmerai/ncollector
+        resources:
+          limits:
+            cpu: 1
+            memory: 2Gi
+          requests:
+            cpu: 1
+            memory: 2Gi
+        env:
+          - name: DB_HOST
+            value: news-postgres-service
+          - name: NEWS_API_KEY
+            valueFrom:
+              secretKeyRef: 
+                name: news-secrets
+                key: apikey
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef: 
+                name: news-secrets
+                key: dbpassword
+
+   
+

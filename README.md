@@ -122,12 +122,13 @@ gcloud container clusters get-credentials $(terraform output -raw kubernetes_clu
 gcloud container clusters get-credentials $(terraform output -raw kubernetes_cluster_name) --zone $(terraform output -raw zone)
 ```
 
-## Create Postgres in GKE
-
-Create **secrets** first:
+## Create Secrets
 ```
 kubectl create secret generic news-secrets --from-literal=apikey="${NEWS_API_KEY}" --from-literal=dbpassword="${DB_PASSWORD}"
 ```
+
+
+## Deploy Postgres in GKE
 
 Then, from folder ```k8s/postgres/```.   
 
@@ -145,6 +146,35 @@ POD=`kubectl get pods -l app=news-postgres | grep -v NAME | awk '{print $1}'`
 kubectl exec -it $POD -- psql -h localhost -p 5432 -U news_db_user -d news -W
 ```
 
+## Deploy ncollector in GKE
+
+Run ```sudo docker login``` first.    
+
+Then, from folder ```ncollector/```.    
+```
+sudo docker build -t mesmerai/ncollector .
+sudo docker push mesmerai/ncollector
+```
+
+Folder ```k8s/ncollector/```.    
+```
+kubectl apply -f ncollector-deployment.yaml 
+kubectl apply -f ncollector-service.yaml
+```
+
+## Deploy ncollector in GKE
+
+
+Folder ```visualizer/```.
+```
+sudo docker build -t mesmerai/visualizer .
+sudo docker push mesmerai/visualizer
+```
+
+Folder ```k8s/visualizer/```:
+```
+
+```
 
 ### Shutdown GCP Resources
 ```

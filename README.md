@@ -45,6 +45,9 @@ Then set the following Environment variables:
 ```
 export NEWS_API_KEY="<news-api-key-here>"
 export DB_PASSWORD="<postgres-db-password-here>
+export JWT_KEY="<jwt-key-here>"
+export USER_AUTH="<user-auth-password>"
+export DB_HOST="db"
 ```
 
 The database host variable is required as it's picked up dinamically by the application.   
@@ -61,7 +64,7 @@ export DB_HOST="localhost"
 ## Run docker-compose to spin up the containers
 Build
 ```
-sudo docker-compose build --build-arg NEWS_API_KEY="${NEWS_API_KEY}" --build-arg DB_PASSWORD="${DB_PASSWORD}"  --build-arg DB_HOST="${DB_HOST}"
+sudo docker-compose build --build-arg NEWS_API_KEY="${NEWS_API_KEY}" --build-arg DB_PASSWORD="${DB_PASSWORD}"  --build-arg DB_HOST="${DB_HOST}" --build-arg JWT_KEY="${JWT_KEY}" --build-arg USER_AUTH="${USER_AUTH}"
 
 ```
 Run

@@ -8,7 +8,9 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	_ "github.com/lib/pq"
 	"github.com/mesmerai/news-aggregator/visualizer/data"
 )
@@ -20,13 +22,33 @@ var db_port int = 5432
 var db_name string = "news"
 var db_user string = "news_db_user"
 var dbconn_max_retries = 10
+var web_user = "carmelo"
 
-// Secrets from ENV
+// ** Secrets from ENV **
 var db_host = environment["db_host"]
 var db_password = environment["db_password"]
 
+// Create the JWT Key from  our secret
+var jwtKey = []byte(environment["jwt_key"])
+
+// user auth
+var web_password = environment["user_auth"]
+
 //DB
 var myDB *data.DBClient
+
+// should get those creds from the login form via POST
+type Credentials struct {
+	Username string
+	Password string
+}
+
+// this struct will be encoded to a JWT
+// We add jwt.StandardClaims to provide fields like expiry time
+type Claims struct {
+	Username string `json:"username"`
+	jwt.StandardClaims
+}
 
 // Loading HTML Template from file. Will will panic if error is not-nil.
 var tmpl = template.Must(template.ParseFiles("./index.html"))
@@ -39,6 +61,7 @@ type Data struct {
 	Favourites      *data.FavouriteDomains
 	NotFavourites   *data.NotFavouriteDomains
 	ArticlesPerFeed []data.ArticlePerFeed
+	LoggedUser      string
 }
 
 var pageData Data
@@ -74,6 +97,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	// log the request
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 
+	checkToken(w, r)
+
 	// some vars declared
 	var err error
 	var favResults *data.FavouriteDomains
@@ -105,6 +130,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		Favourites:      favResults,
 		NotFavourites:   notFavResults,
 		ArticlesPerFeed: articlesPerFeed,
+		LoggedUser:      pageData.LoggedUser,
 	}
 
 	// define empty intermediate buffer
@@ -123,13 +149,119 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func addFeedsHandler(w http.ResponseWriter, r *http.Request) {
+func authHandler(w http.ResponseWriter, r *http.Request) {
+	// log the request
+	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 
-	// some vars declared
-	var err error
+	// Call ParseForm() to parse the raw query and update r.PostForm and r.Form.
+	if err := r.ParseForm(); err != nil {
+		log.Fatal("Error Parsing the Form: ", err)
+		return
+	}
+
+	// Debug
+	//log.Printf("Receiving Post Data! r.PostFrom = %v\n", r.PostForm)
+	thisUser := r.FormValue("username")
+	thisPasswd := r.FormValue("password")
+	//log.Println("Userame = ", thisUser)
+	//log.Println("Password = ", thisPasswd)
+
+	if web_password == "" {
+		log.Fatal("Password cannot be blank.")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	if thisUser != web_user || thisPasswd != web_password {
+		log.Println("Wrong Username or Password.")
+		//w.WriteHeader(http.StatusUnauthorized)
+		log.Println("Redirecting to Login page.")
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	// 5 minutes expiration time for our token
+	expirationTime := time.Now().Add(5 * time.Minute)
+
+	// Create the JWT claims, which includes the username and expiry time
+	claims := &Claims{
+		Username: thisUser,
+		StandardClaims: jwt.StandardClaims{
+			// in JWT expire time is expressed in Unix milliseconds
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	// declare the token with Signign algorithm and claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// create the Token String
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		// raise an Internal Server Error if there's any error creating the JWT
+		w.WriteHeader(http.StatusInternalServerError)
+		//return
+	}
+
+	// finally set the client cookie with the token and same expiration time
+	http.SetCookie(w, &http.Cookie{
+		Name:    "token",
+		Value:   tokenString,
+		Expires: expirationTime,
+	})
+
+	// set the username in the pageData for the template logic
+	thisData := &pageData
+	*thisData = Data{
+		Query:           pageData.Query,
+		NextPage:        pageData.NextPage,
+		TotalPages:      thisData.TotalPages,
+		Results:         pageData.Results,
+		Favourites:      pageData.Favourites,
+		NotFavourites:   pageData.NotFavourites,
+		ArticlesPerFeed: pageData.ArticlesPerFeed,
+		LoggedUser:      thisUser,
+	}
+
+	log.Println("Token set.")
+	log.Println("Redirecting to main page.")
+	http.Redirect(w, r, "/", http.StatusFound)
+
+}
+
+func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	// log the request
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+
+	var err error
+	// define empty intermediate buffer
+	buffer := &bytes.Buffer{}
+
+	// write to intermediate buffer to check errors
+	// NOTE that I'm passing nil instead of pageData
+	err = tmpl.Execute(buffer, nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Then the buffer is written to the ResponseWriter
+	// func (r *Reader) WriteTo(w io.Writer) (n int64, err error)
+	buffer.WriteTo(w)
+
+}
+
+func addFeedsHandler(w http.ResponseWriter, r *http.Request) {
+
+	// log the request
+	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+
+	// require valid token
+	checkToken(w, r)
+
+	// some vars declared
+	var err error
 
 	// Package url parses URLs and implements query escaping ==> http://localhost:8080/search?q=ciccio
 	u, err := url.Parse(r.URL.String())
@@ -152,11 +284,14 @@ func addFeedsHandler(w http.ResponseWriter, r *http.Request) {
 
 func saveFeedsHandler(w http.ResponseWriter, r *http.Request) {
 
-	// some vars declared
-	var err error
-
 	// log the request
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+
+	// require valid token
+	checkToken(w, r)
+
+	// some vars declared
+	var err error
 
 	// Package url parses URLs and implements query escaping ==> http://localhost:8080/saveFeeds?feed=adnkronos.com&feed=ansa.it
 	u, err := url.Parse(r.URL.String())
@@ -181,14 +316,17 @@ func saveFeedsHandler(w http.ResponseWriter, r *http.Request) {
 
 func searchHandler(w http.ResponseWriter, r *http.Request) {
 
+	// log the request
+	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+
+	// require valid token
+	checkToken(w, r)
+
 	// some vars declared
 	var err error
 	var results *data.Results
 	var count int
 	//results := &data.Results{}
-
-	// log the request
-	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 
 	// Package url parses URLs and implements query escaping ==> http://localhost:8080/search?q=ciccio
 	u, err := url.Parse(r.URL.String())
@@ -293,6 +431,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		Favourites:      pageData.Favourites,
 		NotFavourites:   pageData.NotFavourites,
 		ArticlesPerFeed: pageData.ArticlesPerFeed,
+		LoggedUser:      pageData.LoggedUser,
 	}
 
 	// this block is to increment NextPage
@@ -320,6 +459,98 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func checkToken(w http.ResponseWriter, r *http.Request) {
+
+	// ** Authentication Check **
+
+	// get the token from the cookie, that comes at every request
+	c, cookieErr := r.Cookie("token")
+	if cookieErr != nil {
+		if cookieErr == http.ErrNoCookie {
+			// Not Authorized
+			//w.WriteHeader(http.StatusUnauthorized)
+
+			// redirect to login page
+			log.Printf("Unauthorized Access => %s", cookieErr)
+			log.Println("Redirecting to Login page.")
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return
+		}
+		// For any other err, it's Bad Request
+		w.WriteHeader(http.StatusBadRequest)
+		log.Println("Bad Request: ", cookieErr)
+		return
+	}
+
+	// get the token from the Cookie
+	tokenStr := c.Value
+
+	// Initialize an instance of Claims
+	claims := &Claims{}
+
+	// Parse the JWT string and store it in claims
+	// We pass the key as well
+	// this method will return error if token is expired or key doesn't match
+	tkn, tknErr := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+
+	if tknErr != nil {
+		if tknErr == jwt.ErrSignatureInvalid {
+			//w.WriteHeader(http.StatusUnauthorized)
+			// redirect to login page
+			log.Printf("Token Signature Invalid => %s", tknErr)
+			log.Println("Redirecting to Login page.")
+			http.Redirect(w, r, "/login", http.StatusFound)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		log.Println("Bad Request: ", cookieErr)
+		return
+	}
+
+	if !tkn.Valid {
+		//w.WriteHeader(http.StatusUnauthorized)
+		log.Println("Token isn't valid.")
+		log.Println("Redirecting to Login page.")
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
+	// >> At this stage can print a Welcome message to the user <<
+
+	// ** END Authentication Check **
+}
+
+func getEnv() map[string]string {
+
+	envMap := map[string]string{}
+
+	db_host := os.Getenv("DB_HOST")
+	if db_host == "" {
+		log.Fatal("DB_HOST is not set in ENV.")
+	}
+	db_password := os.Getenv("DB_PASSWORD")
+	if db_password == "" {
+		log.Fatal("Password for the DB is not set in ENV.")
+	}
+	jwt_key := os.Getenv("JWT_KEY")
+	if db_password == "" {
+		log.Fatal("JWT_KEY is not set in ENV.")
+	}
+	user_auth := os.Getenv("USER_AUTH")
+	if db_password == "" {
+		log.Fatal("USER_AUTH is not set in ENV.")
+	}
+
+	envMap["db_host"] = db_host
+	envMap["db_password"] = db_password
+	envMap["jwt_key"] = jwt_key
+	envMap["user_auth"] = user_auth
+
+	return envMap
+}
+
 func main() {
 
 	/* ** DB Conn ** */
@@ -340,6 +571,8 @@ func main() {
 
 	// add Handles, basically matches Requests and call the respective Handle
 	mux.HandleFunc("/", indexHandler)
+	mux.HandleFunc("/login", loginHandler)
+	mux.HandleFunc("/auth", authHandler)
 	// static files Handle
 	// use Handle because the http.FileServer() method returns an http.Handler type instead of an HandlerFunc
 	// we Strip the prefix to cut the '/assets/' part and forward the modified request to the handler
@@ -358,23 +591,4 @@ func main() {
 	http.ListenAndServe(":8080", mux)
 
 	log.Println("Server Listening.")
-}
-
-func getEnv() map[string]string {
-
-	envMap := map[string]string{}
-
-	db_host := os.Getenv("DB_HOST")
-	if db_host == "" {
-		log.Fatal("DB_HOST is not set in ENV.")
-	}
-	db_password := os.Getenv("DB_PASSWORD")
-	if db_password == "" {
-		log.Fatal("Password for the DB is not set in ENV.")
-	}
-
-	envMap["db_host"] = db_host
-	envMap["db_password"] = db_password
-
-	return envMap
 }

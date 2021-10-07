@@ -32,7 +32,12 @@ What it does/provides:
 - view of number of articles ingested per Favourite Feed on the right side
 
 
-That's how it looks like:  
+The app requires authentication. 
+![Login](images/login.png)
+
+If successful, it sets a JWT for the user.   
+
+And that's how it looks like after.     
 ![News Aggregator](./images/news-aggregator.png)
 
 # Method 1 | Start all with docker-compose

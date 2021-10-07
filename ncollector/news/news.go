@@ -85,16 +85,6 @@ func (a *Article) FormatPublishedDate() string {
 
 func (c *Client) FetchSources() {
 
-	/*
-		this endpoint:
-		- does not retrieve ALL the sources
-		- they have their own id (r.g. "abc-news"
-
-		Better to:
-		- populate domains from articles
-		- call search Global with domains list
-	*/
-
 	var endpoint = ""
 
 	//https://newsapi.org/v2/top-headlines/sources?apiKey=API_KEY
@@ -105,7 +95,6 @@ func (c *Client) FetchSources() {
 	// Handle error from the response
 	if err != nil {
 		log.Fatal("Error getting a response => ", err)
-		//return nil, err
 	}
 
 	defer resp.Body.Close()
@@ -115,7 +104,6 @@ func (c *Client) FetchSources() {
 
 	if err != nil {
 		log.Fatal("Error reading the response => ", err)
-		//return nil, err
 	}
 
 	// this is for Printing Response Body and Ret Code
@@ -124,7 +112,6 @@ func (c *Client) FetchSources() {
 
 	// checking ret code, http.StatusOk is a const from http pkg
 	if resp.StatusCode != http.StatusOK {
-		//return nil, fmt.Errorf(string(body))
 		log.Fatal("Error Fetching News. Status Code: ", resp.StatusCode)
 	}
 }
@@ -142,7 +129,6 @@ func (c *Client) FetchNews(searchType, query, page, param string) (*Results, err
 	case searchType == "Global":
 		// here param is the 'domains'
 		endpoint = fmt.Sprintf("https://newsapi.org/v2/everything?q=%s&domains=%s&pageSize=%d&page=%s&apiKey=%s&sortBy=publishedAt&language=en", url.QueryEscape(query), param, c.PageSize, page, c.key)
-		//log.Println("endpoint: ", endpoint)
 	default:
 		log.Fatal("Search type Must be specified. Allowed values: 'Global', 'ByCountry'")
 	}

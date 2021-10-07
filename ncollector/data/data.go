@@ -163,7 +163,6 @@ func (db *DBClient) InsertSource(sourceName string) (sourceID int) {
 	var insertRow *sql.Row
 	var insertErr error
 
-	// INSERT INTO source (name) VALUES ('Ansa');
 	var sqlInsert = `INSERT INTO sources (name) VALUES ($1) RETURNING id`
 
 	// QueryRow returns a *Row
@@ -188,7 +187,6 @@ func (db *DBClient) InsertDomain(domainName string) (domainID int) {
 	var insertErr error
 	sqlInsert := ""
 
-	// INSERT INTO source (name) VALUES ('Ansa');
 	sqlInsert = `INSERT INTO domains (name) VALUES ($1) RETURNING id`
 
 	// QueryRow returns a *Row
@@ -212,7 +210,6 @@ func (db *DBClient) InsertArticle(sourceID, domainID int, author string, title s
 
 	log.Println("Initate InsertArticle.")
 
-	// INSERT INTO source (name) VALUES ('Ansa');
 	sqlInsert = `INSERT INTO articles (source_id, domain_id, author, title, description, url, url_to_image,
 		published_at, content, country, language, category) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
 

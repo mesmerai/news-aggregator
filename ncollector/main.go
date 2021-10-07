@@ -67,12 +67,6 @@ func main() {
 	log.Println("Initiating Cron Jobs")
 	ctab := crontab.New() // create cron table
 
-	//ctab.MustAddJob("* * * * *", FetchItaly)
-	// Run every 3 hours - Does not work, run every minute!
-	//ctab.MustAddJob("* */3 * * *", FetchItaly)
-	//ctab.MustAddJob("* */3 * * *", FetchAustralia)
-	//ctab.MustAddJob("* */3 * * *", FetchGlobal)
-
 	// run at 9:10, 12:10, 15:10 etc..
 	ctab.MustAddJob("0 1,4,7,10,13,16,19,22 * * *", FetchItaly)
 	ctab.MustAddJob("5 1,4,7,10,13,16,19,22 * * *", FetchAustralia)
@@ -88,7 +82,6 @@ func main() {
 
 	<-stop
 
-	//srv.db.close()
 	ctab.Clear()
 	log.Println("Clear Cron Resources")
 }
@@ -113,24 +106,6 @@ func FetchGlobal() {
 
 	// restricted list of domains REQUIRED to not reach the API call daily LIMIT of 50 API calls in 12 hours
 	//dList := []string{"corriere.it", "ansa.it", "rainews.it"}
-
-	// ** COMMENTING BEFORE DELETE **
-	/*
-		rows := myDB.GetFavourites()
-		dList := make([]string, 0)
-
-		for rows.Next() {
-			err := rows.Scan(&thisDomain.id, &thisDomain.name, &thisDomain.favourite)
-			if err != nil {
-				log.Fatal("Error on reading SQL SELECT results => ", err)
-			}
-
-			dList = append(dList, thisDomain.name)
-		}
-
-		log.Println("Global | Favourite Feeds: ", dList)
-		GlobalFetchAndStore(myDB, newsapi, dList)
-	*/
 
 	GlobalFetchAndStore(myDB, newsapi)
 
@@ -188,11 +163,6 @@ func FetchAustralia() {
 
 // API call for each domain - LIMIT per Dev plan reached at 50 calls in 12 hours
 func GlobalFetchAndStore(myDB *data.DBClient, newsapi *news.Client) {
-
-	// ** COMMENTING BEFORE DELETE **
-	/*
-		domainRows := myDB.GetDomains(domainsList)
-	*/
 
 	feedRows := myDB.GetFavourites()
 

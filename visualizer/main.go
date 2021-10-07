@@ -61,11 +61,19 @@ type Data struct {
 	Favourites      *data.FavouriteDomains
 	NotFavourites   *data.NotFavouriteDomains
 	ArticlesPerFeed []data.ArticlePerFeed
-	LoggedUser      string
+	LoggedUser      *LoggedUser
 	Message         string
 }
 
 var pageData Data
+
+type LoggedUser struct {
+	Username   string
+	TTL        int
+	LastAccess int64
+}
+
+var userInfo LoggedUser
 
 // determine if it's LastPage to set the 'Next' button
 func (s *Data) IsLastPage() bool {
@@ -99,6 +107,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 
 	checkToken(w, r)
+	checkLoggedUser()
 
 	// some vars declared
 	var err error
@@ -181,11 +190,11 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		//log.Println("Redirecting to Login page.")
 		//http.Redirect(w, r, "/login", http.StatusFound)
 
-		// ** TEST write the login instead of redirect **
+		// ** Print the login instead of redirect **
 		var err error
+		thisData1 := &pageData
 
-		thisData := &pageData
-		*thisData = Data{
+		*thisData1 = Data{
 			Query:           pageData.Query,
 			NextPage:        pageData.NextPage,
 			TotalPages:      pageData.TotalPages,
@@ -199,13 +208,13 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 
 		buffer := &bytes.Buffer{}
 		// NOTE that I'm passing nil instead of pageData
-		err = tmpl.Execute(buffer, thisData)
+		err = tmpl.Execute(buffer, thisData1)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		buffer.WriteTo(w)
-		// ** End TEST **
+		// ** End Printing Login **
 
 		return
 	}
@@ -240,6 +249,14 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		Expires: expirationTime,
 	})
 
+	// first we set the LoggedUser with TTL and last access
+	thisLoggedUser := &userInfo
+	*thisLoggedUser = LoggedUser{
+		Username:   thisUser,
+		TTL:        int(expirationTime.Unix()),
+		LastAccess: time.Now().Unix(),
+	}
+
 	// set the username in the pageData for the template logic
 	thisData := &pageData
 	*thisData = Data{
@@ -250,7 +267,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		Favourites:      pageData.Favourites,
 		NotFavourites:   pageData.NotFavourites,
 		ArticlesPerFeed: pageData.ArticlesPerFeed,
-		LoggedUser:      thisUser,
+		LoggedUser:      thisLoggedUser,
 		Message:         pageData.Message,
 	}
 
@@ -290,6 +307,7 @@ func addFeedsHandler(w http.ResponseWriter, r *http.Request) {
 
 	// require valid token
 	checkToken(w, r)
+	checkLoggedUser()
 
 	// some vars declared
 	var err error
@@ -320,6 +338,7 @@ func saveFeedsHandler(w http.ResponseWriter, r *http.Request) {
 
 	// require valid token
 	checkToken(w, r)
+	checkLoggedUser()
 
 	// some vars declared
 	var err error
@@ -352,6 +371,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 	// require valid token
 	checkToken(w, r)
+	checkLoggedUser()
 
 	// some vars declared
 	var err error
@@ -489,6 +509,21 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	// func (r *Reader) WriteTo(w io.Writer) (n int64, err error)
 	buffer.WriteTo(w)
 
+}
+
+func checkLoggedUser() {
+	thisLoggedUser := &userInfo
+	now := time.Now().Unix()
+
+	if now-userInfo.LastAccess > int64(userInfo.TTL) {
+		// if TTL expired clear the userInfo struct
+		log.Println("TTL Expired for userInfo. Clearing up.")
+		*thisLoggedUser = LoggedUser{}
+		log.Println(thisLoggedUser)
+	} else {
+		log.Println("Valid user, valid TTL.")
+		log.Println(thisLoggedUser)
+	}
 }
 
 func checkToken(w http.ResponseWriter, r *http.Request) {

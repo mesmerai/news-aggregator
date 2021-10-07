@@ -101,12 +101,12 @@ func (s *Data) PreviousPage() int {
 to the connection as part of an HTTP response.
 - the r parameter represents the HTTP request received from the client.
 */
-func indexHandler(w http.ResponseWriter, r *http.Request) {
+func index(w http.ResponseWriter, r *http.Request) {
 
 	// log the request
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 
-	checkToken(w, r)
+	//checkToken(w, r)
 	checkLoggedUser()
 
 	// some vars declared
@@ -160,7 +160,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func authHandler(w http.ResponseWriter, r *http.Request) {
+func auth(w http.ResponseWriter, r *http.Request) {
 	// log the request
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 
@@ -220,7 +220,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 5 minutes expiration time for our token
-	expirationTime := time.Now().Add(5 * time.Minute)
+	expirationTime := time.Now().Add(1 * time.Minute)
 
 	// Create the JWT claims, which includes the username and expiry time
 	claims := &Claims{
@@ -277,7 +277,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func loginHandler(w http.ResponseWriter, r *http.Request) {
+func login(w http.ResponseWriter, r *http.Request) {
 
 	// log the request
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
@@ -300,13 +300,13 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func addFeedsHandler(w http.ResponseWriter, r *http.Request) {
+func addFeeds(w http.ResponseWriter, r *http.Request) {
 
 	// log the request
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 
 	// require valid token
-	checkToken(w, r)
+	//checkToken(w, r)
 	checkLoggedUser()
 
 	// some vars declared
@@ -331,13 +331,13 @@ func addFeedsHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func saveFeedsHandler(w http.ResponseWriter, r *http.Request) {
+func saveFeeds(w http.ResponseWriter, r *http.Request) {
 
 	// log the request
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 
 	// require valid token
-	checkToken(w, r)
+	//checkToken(w, r)
 	checkLoggedUser()
 
 	// some vars declared
@@ -364,13 +364,13 @@ func saveFeedsHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func searchHandler(w http.ResponseWriter, r *http.Request) {
+func search(w http.ResponseWriter, r *http.Request) {
 
 	// log the request
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 
 	// require valid token
-	checkToken(w, r)
+	//checkToken(w, r)
 	checkLoggedUser()
 
 	// some vars declared
@@ -526,25 +526,35 @@ func checkLoggedUser() {
 	}
 }
 
-func checkToken(w http.ResponseWriter, r *http.Request) {
+func checkTokenMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-	// ** Authentication Check **
+		// ** Authentication Check **
 
-	// get the token from the cookie, that comes at every request
-	c, cookieErr := r.Cookie("token")
-	if cookieErr != nil {
-		if cookieErr == http.ErrNoCookie {
-			// Not Authorized
-			w.WriteHeader(http.StatusUnauthorized)
-			log.Printf("Unauthorized Access => %s", cookieErr)
+		// get the token from the cookie, that comes at every request
+		c, cookieErr := r.Cookie("token")
+		if cookieErr != nil {
+			if cookieErr == http.ErrNoCookie {
+				// Not Authorized
+				w.WriteHeader(http.StatusUnauthorized)
+				log.Printf("Unauthorized Access => %s", cookieErr)
 
-			// redirect to login page
-			//log.Println("Redirecting to Login page.")
-			//http.Redirect(w, r, "/login", http.StatusFound)
-
-			// ** TEST write the login instead of redirect **
-			/*
+				// ** Print the login instead of redirect **
 				var err error
+				thisData1 := &pageData
+
+				*thisData1 = Data{
+					Query:           pageData.Query,
+					NextPage:        pageData.NextPage,
+					TotalPages:      pageData.TotalPages,
+					Results:         pageData.Results,
+					Favourites:      pageData.Favourites,
+					NotFavourites:   pageData.NotFavourites,
+					ArticlesPerFeed: pageData.ArticlesPerFeed,
+					LoggedUser:      pageData.LoggedUser,
+					Message:         pageData.Message,
+				}
+
 				buffer := &bytes.Buffer{}
 				// NOTE that I'm passing nil instead of pageData
 				err = tmpl.Execute(buffer, nil)
@@ -553,57 +563,110 @@ func checkToken(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				buffer.WriteTo(w)
-			*/
-			// ** End TEST **
+				// ** End Printing Login **
 
+				return
+			}
+			// For any other err, it's Bad Request
+			w.WriteHeader(http.StatusBadRequest)
+			log.Println("Bad Request: ", cookieErr)
 			return
 		}
-		// For any other err, it's Bad Request
-		w.WriteHeader(http.StatusBadRequest)
-		log.Println("Bad Request: ", cookieErr)
-		return
-	}
 
-	// get the token from the Cookie
-	tokenStr := c.Value
+		// get the token from the Cookie
+		tokenStr := c.Value
 
-	// Initialize an instance of Claims
-	claims := &Claims{}
+		// Initialize an instance of Claims
+		claims := &Claims{}
 
-	// Parse the JWT string and store it in claims
-	// We pass the key as well
-	// this method will return error if token is expired or key doesn't match
-	tkn, tknErr := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
-		return jwtKey, nil
-	})
+		// Parse the JWT string and store it in claims
+		// We pass the key as well
+		// this method will return error if token is expired or key doesn't match
+		tkn, tknErr := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
+		})
 
-	if tknErr != nil {
-		if tknErr == jwt.ErrSignatureInvalid {
+		if tknErr != nil {
+			if tknErr == jwt.ErrSignatureInvalid {
+				w.WriteHeader(http.StatusUnauthorized)
+				log.Printf("Token Signature Invalid => %s", tknErr)
+
+				message := "Token Signature Invalid. Authentication required."
+				log.Println(message)
+
+				// ** Print the login instead of redirect **
+				var err error
+				thisData1 := &pageData
+
+				*thisData1 = Data{
+					Query:           pageData.Query,
+					NextPage:        pageData.NextPage,
+					TotalPages:      pageData.TotalPages,
+					Results:         pageData.Results,
+					Favourites:      pageData.Favourites,
+					NotFavourites:   pageData.NotFavourites,
+					ArticlesPerFeed: pageData.ArticlesPerFeed,
+					LoggedUser:      pageData.LoggedUser,
+					Message:         message,
+				}
+
+				buffer := &bytes.Buffer{}
+				// NOTE that I'm passing nil instead of pageData
+				err = tmpl.Execute(buffer, nil)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				buffer.WriteTo(w)
+				// ** End Printing Login **
+
+				return
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			log.Println("Bad Request: ", cookieErr)
+			return
+		}
+
+		if !tkn.Valid {
 			w.WriteHeader(http.StatusUnauthorized)
-			log.Printf("Token Signature Invalid => %s", tknErr)
+			message := "Token isn't valid. Authentication required."
+			log.Println(message)
 
-			// redirect to login page
-			//log.Println("Redirecting to Login page.")
-			//http.Redirect(w, r, "/login", http.StatusFound)
+			// ** Print the login instead of redirect **
+			var err error
+			thisData1 := &pageData
+
+			*thisData1 = Data{
+				Query:           pageData.Query,
+				NextPage:        pageData.NextPage,
+				TotalPages:      pageData.TotalPages,
+				Results:         pageData.Results,
+				Favourites:      pageData.Favourites,
+				NotFavourites:   pageData.NotFavourites,
+				ArticlesPerFeed: pageData.ArticlesPerFeed,
+				LoggedUser:      pageData.LoggedUser,
+				Message:         message,
+			}
+
+			buffer := &bytes.Buffer{}
+			// NOTE that I'm passing nil instead of pageData
+			err = tmpl.Execute(buffer, nil)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			buffer.WriteTo(w)
+			// ** End Printing Login **
+
 			return
 		}
-		w.WriteHeader(http.StatusBadRequest)
-		log.Println("Bad Request: ", cookieErr)
-		return
-	}
 
-	if !tkn.Valid {
-		w.WriteHeader(http.StatusUnauthorized)
-		log.Println("Token isn't valid.")
+		// >> At this stage can print a Welcome message to the user <<
 
-		//log.Println("Redirecting to Login page.")
-		//http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
+		// ** END Authentication Check **
 
-	// >> At this stage can print a Welcome message to the user <<
-
-	// ** END Authentication Check **
+		next.ServeHTTP(w, r)
+	})
 }
 
 func getEnv() map[string]string {
@@ -654,9 +717,13 @@ func main() {
 	mux := http.NewServeMux()
 
 	// add Handles, basically matches Requests and call the respective Handle
-	mux.HandleFunc("/", indexHandler)
-	mux.HandleFunc("/login", loginHandler)
-	mux.HandleFunc("/auth", authHandler)
+	//mux.HandleFunc("/", indexHandler)
+	indexHandler := http.HandlerFunc(index)
+	mux.Handle("/", checkTokenMiddleware(indexHandler))
+
+	mux.HandleFunc("/login", login)
+	mux.HandleFunc("/auth", auth)
+
 	// static files Handle
 	// use Handle because the http.FileServer() method returns an http.Handler type instead of an HandlerFunc
 	// we Strip the prefix to cut the '/assets/' part and forward the modified request to the handler
@@ -665,10 +732,17 @@ func main() {
 	mux.Handle("/assets/", http.StripPrefix("/assets/", fs))
 
 	// handler for /search
-	mux.HandleFunc("/search", searchHandler)
+	//mux.HandleFunc("/search", searchHandler)
+	searchHandler := http.HandlerFunc(search)
+	mux.Handle("/search", checkTokenMiddleware(searchHandler))
 
-	mux.HandleFunc("/addFeeds", addFeedsHandler)
-	mux.HandleFunc("/saveFeeds", saveFeedsHandler)
+	//mux.HandleFunc("/addFeeds", addFeedsHandler)
+	addFeedsHandler := http.HandlerFunc(addFeeds)
+	mux.Handle("/addFeeds", checkTokenMiddleware(addFeedsHandler))
+
+	//mux.HandleFunc("/saveFeeds", saveFeedsHandler)
+	saveFeedsHandler := http.HandlerFunc(saveFeeds)
+	mux.Handle("/saveFeeds", checkTokenMiddleware(saveFeedsHandler))
 
 	// ListenAndServe starts an HTTP server with a given address and handler.
 	// -- http://localhost:8080

@@ -106,9 +106,6 @@ func index(w http.ResponseWriter, r *http.Request) {
 	// log the request
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 
-	//checkToken(w, r)
-	//checkLoggedUser()
-
 	// some vars declared
 	var err error
 	var favResults *data.FavouriteDomains
@@ -261,7 +258,7 @@ func auth(w http.ResponseWriter, r *http.Request) {
 		LastAccess: time.Now().Unix(),
 	}
 
-	// set the username in the pageData for the template logic
+	// set the LoggedUser in the pageData for the template logic
 	thisData := &pageData
 	*thisData = Data{
 		Query:           pageData.Query,
@@ -281,39 +278,10 @@ func auth(w http.ResponseWriter, r *http.Request) {
 
 }
 
-/*
-func login(w http.ResponseWriter, r *http.Request) {
-
-	// log the request
-	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
-
-	var err error
-	// define empty intermediate buffer
-	buffer := &bytes.Buffer{}
-
-	// write to intermediate buffer to check errors
-	// NOTE that I'm passing nil instead of pageData
-	err = tmpl.Execute(buffer, nil)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Then the buffer is written to the ResponseWriter
-	// func (r *Reader) WriteTo(w io.Writer) (n int64, err error)
-	buffer.WriteTo(w)
-
-}
-*/
-
 func addFeeds(w http.ResponseWriter, r *http.Request) {
 
 	// log the request
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
-
-	// require valid token
-	//checkToken(w, r)
-	//checkLoggedUser()
 
 	// some vars declared
 	var err error
@@ -328,12 +296,10 @@ func addFeeds(w http.ResponseWriter, r *http.Request) {
 	params := u.Query()
 	feeds := params["afeed"]
 
-	//fmt.Println(feeds)
-
 	myDB.SetFavourites(feeds)
 
 	// redirect to root
-	http.Redirect(w, r, "/", http.StatusMovedPermanently)
+	http.Redirect(w, r, "/", http.StatusFound)
 
 }
 
@@ -341,10 +307,6 @@ func saveFeeds(w http.ResponseWriter, r *http.Request) {
 
 	// log the request
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
-
-	// require valid token
-	//checkToken(w, r)
-	//checkLoggedUser()
 
 	// some vars declared
 	var err error
@@ -358,15 +320,12 @@ func saveFeeds(w http.ResponseWriter, r *http.Request) {
 
 	params := u.Query()
 	feeds := params["sfeed"]
-	//dList := make([]string, 0)
-
-	//fmt.Println(feeds)
 
 	myDB.ResetFavourites()
 	myDB.SetFavourites(feeds)
 
 	// redirect to root
-	http.Redirect(w, r, "/", http.StatusMovedPermanently)
+	http.Redirect(w, r, "/", http.StatusFound)
 
 }
 
@@ -375,15 +334,10 @@ func search(w http.ResponseWriter, r *http.Request) {
 	// log the request
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 
-	// require valid token
-	//checkToken(w, r)
-	//checkLoggedUser()
-
 	// some vars declared
 	var err error
 	var results *data.Results
 	var count int
-	//results := &data.Results{}
 
 	// Package url parses URLs and implements query escaping ==> http://localhost:8080/search?q=ciccio
 	u, err := url.Parse(r.URL.String())
@@ -516,24 +470,6 @@ func search(w http.ResponseWriter, r *http.Request) {
 	buffer.WriteTo(w)
 
 }
-
-// ** Might not be required or will be converted to Middleware
-/*
-func checkLoggedUser() {
-	thisLoggedUser := &userInfo
-	now := time.Now().Unix()
-
-	if now-userInfo.LastAccess > int64(userInfo.TTL) {
-		// if TTL expired clear the userInfo struct
-		log.Println("TTL Expired for userInfo. Clearing up.")
-		*thisLoggedUser = LoggedUser{}
-		//log.Println(thisLoggedUser)
-	} else {
-		log.Println("Valid user, valid TTL.")
-		//log.Println(thisLoggedUser)
-	}
-}
-*/
 
 func checkTokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -76,8 +76,6 @@ func (a *Article) FormatPublishedDate() string {
 	localTime := t.In(loc)
 	return fmt.Sprintf("%v", localTime)
 
-	//return fmt.Sprintln(t.Format(time.UnixDate))
-
 }
 
 func NewDBClient(db_host string, db_port int, db_name string, db_user string, db_password string, maxRetries int) (db *DBClient) {
@@ -407,15 +405,7 @@ func (db *DBClient) GetArticles(limit, offset int, word string) *Results {
 		// this is a slice of Article type
 		res.Articles = append(res.Articles, a)
 	}
-	/*
-		res := Results{
-			"200",
-			len(articles),
-			articles,
-		}
-	*/
 
-	//res.TotalResults = 123
 	return res
 
 }

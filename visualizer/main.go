@@ -62,6 +62,7 @@ type Data struct {
 	NotFavourites   *data.NotFavouriteDomains
 	ArticlesPerFeed []data.ArticlePerFeed
 	LoggedUser      string
+	Message         string
 }
 
 var pageData Data
@@ -131,6 +132,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		NotFavourites:   notFavResults,
 		ArticlesPerFeed: articlesPerFeed,
 		LoggedUser:      pageData.LoggedUser,
+		Message:         thisData.Message,
 	}
 
 	// define empty intermediate buffer
@@ -173,10 +175,38 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if thisUser != web_user || thisPasswd != web_password {
-		log.Println("Wrong Username or Password.")
-		//w.WriteHeader(http.StatusUnauthorized)
-		log.Println("Redirecting to Login page.")
-		http.Redirect(w, r, "/login", http.StatusFound)
+		message := "Wrong Username or Password."
+		log.Println(message)
+		w.WriteHeader(http.StatusUnauthorized)
+		//log.Println("Redirecting to Login page.")
+		//http.Redirect(w, r, "/login", http.StatusFound)
+
+		// ** TEST write the login instead of redirect **
+		var err error
+
+		thisData := &pageData
+		*thisData = Data{
+			Query:           pageData.Query,
+			NextPage:        pageData.NextPage,
+			TotalPages:      pageData.TotalPages,
+			Results:         pageData.Results,
+			Favourites:      pageData.Favourites,
+			NotFavourites:   pageData.NotFavourites,
+			ArticlesPerFeed: pageData.ArticlesPerFeed,
+			LoggedUser:      pageData.LoggedUser,
+			Message:         message,
+		}
+
+		buffer := &bytes.Buffer{}
+		// NOTE that I'm passing nil instead of pageData
+		err = tmpl.Execute(buffer, thisData)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		buffer.WriteTo(w)
+		// ** End TEST **
+
 		return
 	}
 
@@ -221,6 +251,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		NotFavourites:   pageData.NotFavourites,
 		ArticlesPerFeed: pageData.ArticlesPerFeed,
 		LoggedUser:      thisUser,
+		Message:         pageData.Message,
 	}
 
 	log.Println("Token set.")
@@ -432,6 +463,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		NotFavourites:   pageData.NotFavourites,
 		ArticlesPerFeed: pageData.ArticlesPerFeed,
 		LoggedUser:      pageData.LoggedUser,
+		Message:         thisData.Message,
 	}
 
 	// this block is to increment NextPage
@@ -468,12 +500,27 @@ func checkToken(w http.ResponseWriter, r *http.Request) {
 	if cookieErr != nil {
 		if cookieErr == http.ErrNoCookie {
 			// Not Authorized
-			//w.WriteHeader(http.StatusUnauthorized)
+			w.WriteHeader(http.StatusUnauthorized)
+			log.Printf("Unauthorized Access => %s", cookieErr)
 
 			// redirect to login page
-			log.Printf("Unauthorized Access => %s", cookieErr)
-			log.Println("Redirecting to Login page.")
-			http.Redirect(w, r, "/login", http.StatusFound)
+			//log.Println("Redirecting to Login page.")
+			//http.Redirect(w, r, "/login", http.StatusFound)
+
+			// ** TEST write the login instead of redirect **
+			/*
+				var err error
+				buffer := &bytes.Buffer{}
+				// NOTE that I'm passing nil instead of pageData
+				err = tmpl.Execute(buffer, nil)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				buffer.WriteTo(w)
+			*/
+			// ** End TEST **
+
 			return
 		}
 		// For any other err, it's Bad Request
@@ -497,11 +544,12 @@ func checkToken(w http.ResponseWriter, r *http.Request) {
 
 	if tknErr != nil {
 		if tknErr == jwt.ErrSignatureInvalid {
-			//w.WriteHeader(http.StatusUnauthorized)
-			// redirect to login page
+			w.WriteHeader(http.StatusUnauthorized)
 			log.Printf("Token Signature Invalid => %s", tknErr)
-			log.Println("Redirecting to Login page.")
-			http.Redirect(w, r, "/login", http.StatusFound)
+
+			// redirect to login page
+			//log.Println("Redirecting to Login page.")
+			//http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
 		w.WriteHeader(http.StatusBadRequest)
@@ -510,10 +558,11 @@ func checkToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !tkn.Valid {
-		//w.WriteHeader(http.StatusUnauthorized)
+		w.WriteHeader(http.StatusUnauthorized)
 		log.Println("Token isn't valid.")
-		log.Println("Redirecting to Login page.")
-		http.Redirect(w, r, "/login", http.StatusFound)
+
+		//log.Println("Redirecting to Login page.")
+		//http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
 

@@ -154,6 +154,9 @@
               <p>
                 <input class="search-button" type="submit" value="Login">
               </p>
+              {{ if .Message }}
+                <p style="color:red">{{ .Message }}</p>
+              {{ end }}
             </form>
           </div>
         {{ end }}

@@ -107,7 +107,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 
 	//checkToken(w, r)
-	checkLoggedUser()
+	//checkLoggedUser()
 
 	// some vars declared
 	var err error
@@ -174,12 +174,14 @@ func auth(w http.ResponseWriter, r *http.Request) {
 	//log.Printf("Receiving Post Data! r.PostFrom = %v\n", r.PostForm)
 	thisUser := r.FormValue("username")
 	thisPasswd := r.FormValue("password")
-	//log.Println("Userame = ", thisUser)
-	//log.Println("Password = ", thisPasswd)
 
 	if web_password == "" {
 		log.Fatal("Password cannot be blank.")
 		w.WriteHeader(http.StatusUnauthorized)
+
+		// Clear up the data struct
+		thisData1 := &pageData
+		*thisData1 = Data{}
 		return
 	}
 
@@ -187,13 +189,15 @@ func auth(w http.ResponseWriter, r *http.Request) {
 		message := "Wrong Username or Password."
 		log.Println(message)
 		w.WriteHeader(http.StatusUnauthorized)
-		//log.Println("Redirecting to Login page.")
-		//http.Redirect(w, r, "/login", http.StatusFound)
 
 		// ** Print the login instead of redirect **
 		var err error
 		thisData1 := &pageData
 
+		// Clear up the data struct first
+		*thisData1 = Data{}
+
+		// set the message only
 		*thisData1 = Data{
 			Query:           pageData.Query,
 			NextPage:        pageData.NextPage,
@@ -220,7 +224,7 @@ func auth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 5 minutes expiration time for our token
-	expirationTime := time.Now().Add(1 * time.Minute)
+	expirationTime := time.Now().Add(5 * time.Minute)
 
 	// Create the JWT claims, which includes the username and expiry time
 	claims := &Claims{
@@ -239,7 +243,7 @@ func auth(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// raise an Internal Server Error if there's any error creating the JWT
 		w.WriteHeader(http.StatusInternalServerError)
-		//return
+		return
 	}
 
 	// finally set the client cookie with the token and same expiration time
@@ -277,6 +281,7 @@ func auth(w http.ResponseWriter, r *http.Request) {
 
 }
 
+/*
 func login(w http.ResponseWriter, r *http.Request) {
 
 	// log the request
@@ -299,6 +304,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	buffer.WriteTo(w)
 
 }
+*/
 
 func addFeeds(w http.ResponseWriter, r *http.Request) {
 
@@ -307,7 +313,7 @@ func addFeeds(w http.ResponseWriter, r *http.Request) {
 
 	// require valid token
 	//checkToken(w, r)
-	checkLoggedUser()
+	//checkLoggedUser()
 
 	// some vars declared
 	var err error
@@ -338,7 +344,7 @@ func saveFeeds(w http.ResponseWriter, r *http.Request) {
 
 	// require valid token
 	//checkToken(w, r)
-	checkLoggedUser()
+	//checkLoggedUser()
 
 	// some vars declared
 	var err error
@@ -371,7 +377,7 @@ func search(w http.ResponseWriter, r *http.Request) {
 
 	// require valid token
 	//checkToken(w, r)
-	checkLoggedUser()
+	//checkLoggedUser()
 
 	// some vars declared
 	var err error
@@ -511,6 +517,8 @@ func search(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// ** Might not be required or will be converted to Middleware
+/*
 func checkLoggedUser() {
 	thisLoggedUser := &userInfo
 	now := time.Now().Unix()
@@ -519,12 +527,13 @@ func checkLoggedUser() {
 		// if TTL expired clear the userInfo struct
 		log.Println("TTL Expired for userInfo. Clearing up.")
 		*thisLoggedUser = LoggedUser{}
-		log.Println(thisLoggedUser)
+		//log.Println(thisLoggedUser)
 	} else {
 		log.Println("Valid user, valid TTL.")
-		log.Println(thisLoggedUser)
+		//log.Println(thisLoggedUser)
 	}
 }
+*/
 
 func checkTokenMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -543,17 +552,8 @@ func checkTokenMiddleware(next http.Handler) http.Handler {
 				var err error
 				thisData1 := &pageData
 
-				*thisData1 = Data{
-					Query:           pageData.Query,
-					NextPage:        pageData.NextPage,
-					TotalPages:      pageData.TotalPages,
-					Results:         pageData.Results,
-					Favourites:      pageData.Favourites,
-					NotFavourites:   pageData.NotFavourites,
-					ArticlesPerFeed: pageData.ArticlesPerFeed,
-					LoggedUser:      pageData.LoggedUser,
-					Message:         pageData.Message,
-				}
+				// Clear up the data struct first (howver it's passing nil)
+				*thisData1 = Data{}
 
 				buffer := &bytes.Buffer{}
 				// NOTE that I'm passing nil instead of pageData
@@ -598,6 +598,10 @@ func checkTokenMiddleware(next http.Handler) http.Handler {
 				var err error
 				thisData1 := &pageData
 
+				// Clear up the data struct first
+				*thisData1 = Data{}
+
+				// set message only
 				*thisData1 = Data{
 					Query:           pageData.Query,
 					NextPage:        pageData.NextPage,
@@ -636,6 +640,10 @@ func checkTokenMiddleware(next http.Handler) http.Handler {
 			var err error
 			thisData1 := &pageData
 
+			// Clear up the data struct first
+			*thisData1 = Data{}
+
+			// set message only
 			*thisData1 = Data{
 				Query:           pageData.Query,
 				NextPage:        pageData.NextPage,
@@ -721,7 +729,7 @@ func main() {
 	indexHandler := http.HandlerFunc(index)
 	mux.Handle("/", checkTokenMiddleware(indexHandler))
 
-	mux.HandleFunc("/login", login)
+	//mux.HandleFunc("/login", login)
 	mux.HandleFunc("/auth", auth)
 
 	// static files Handle

@@ -667,6 +667,56 @@ kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | gre
 http://127.0.0.1:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
 ```
 
+## More on AWS/EKS
+
+Includes:
+- ECR for container images
+- ELB for load distribution
+- IAM for authentication
+- VPC for isolation
+
+The control plane consists of at least two API server instances and three etcd instances that run across three Availability Zones within a Region.  
+
+Notes.
+
+**Kubernetes Service address range**  
+Kubernetes uses a separate address range to allocate IP addresses to internal services within the cluster. This is referred to as Kubernetes service address range. This range must NOT be within the virtual network range and must not be used anywhere else.
+
+**Cluster Endpoint access**
+That's the access to k8s API from within the VPC (private) or from outside the VPC (public) or both.   
+
+Meaning ```kubectl``` management access.  
+
+**Autoscaling**
+This is a combination of:
+- Kubernetes Cluster Autoscaler
+- AWS Cloud Implementation (extension to k8s) - integration with AWS services and EC2
+- Node groups - A k8s abstration to group of nodes withing a cluster (not a kubernetes thing)
+- AWS EC2 Autoscaling Groups - Used by the Cluster Autoscaler in AWS
+
+Managed Nodes in AWS:
+![EKS-Managed-Node-Groups](images/EKS-Managed-Node-Groups.png)
+
+Things to find out later:
+```
+Amazon EKS control plane – Deployed and managed by Amazon EKS in an Amazon EKS managed VPC. When you create the cluster, Amazon EKS creates and manages network interfaces in your account that have Amazon EKS <cluster name> in their description. These network interfaces allow AWS Fargate and Amazon EC2 instances to communicate with the control plane. 
+```
+
+To figure out how much is created by Terraform modules and how much is created/managed by AWS managed service.
+
+### Visualize the Terraform Plan
+Image generated with graphviz (dot) is scaled down, loses resolutions and it's still big and hard to visualize.
+
+Better tool is Terraform Visual (Online) - https://hieven.github.io/terraform-visual/
+
+```
+$ terraform plan -out=plan.out
+$ terraform show -json plan.out > plan.json
+```
+
+That's the full image generated: 
+![EKS-Graph](images/terraform-eks-visual.png)
+
 
 # Troubleshooting 
 

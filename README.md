@@ -123,7 +123,7 @@ terraform plan
 terraform apply -auto-approve
 ```
 
-Get cluster credentials:
+Get cluster credentials and configure automatically ```kubectl```:
 ```
 -- regional cluster
 gcloud container clusters get-credentials $(terraform output -raw kubernetes_cluster_name) --region $(terraform output -raw region)
@@ -142,8 +142,13 @@ kubectl create secret generic news-secrets --from-literal=apikey="${NEWS_API_KEY
 
 From folder ```k8s/postgres/```.   
 
+Storage Class and Persistent Volume Claim on GCP:
 ```
-kubectl apply -f postgres-pv.yaml 
+kubectl apply -f GCP/postgres-pv.yaml 
+```
+
+Then continue:
+```
 kubectl create configmap pg-initdb --from-file ../../db/CreateTables.sql 
 kubectl apply -f postgres-deployment.yaml 
 kubectl apply -f postgres-service.yaml
@@ -195,6 +200,117 @@ Folder ```terraform/gke/```.
 ```
 terraform destroy -auto-approve
 ```
+
+
+# Method 3 | Deploy and Run in AWS/EKS 
+
+First, set the Environment variables as above.  
+
+## Requirements   
+- Install ```terraform```
+- Install ```aws-cli``` and configure it 
+- Install  ```AWS IAM Authenticator``` - https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html 
+- Install ```kubectl``` and ```wget``` for EKS module    
+- Ensure you have permissions required for EKS module - https://github.com/terraform-aws-modules/terraform-aws-eks/blob/master/docs/iam-permissions.md  
+- Set the  ```AWS_SHARED_CREDENTIALS_FILE``` env variable for terraform to point to service account credentials 
+```
+export AWS_SHARED_CREDENTIALS_FILE="/path/to/my/credentials"
+```
+
+## Create AWS/EKS Resources
+
+Folder ```terraform/eks/```.   
+
+**Terraform** plan and apply:
+```
+terraform plan
+terraform apply -auto-approve
+```
+
+Output (53 resources created):
+```
+Apply complete! Resources: 53 added, 0 changed, 0 destroyed.
+```
+
+
+Get cluster credentials and configure automatically ```kubectl```:
+```
+$ aws eks --region $(terraform output -raw region) update-kubeconfig --name $(terraform output -raw cluster_name)
+```
+
+If get error like: ```'NoneType' object is not iterable``` delete ```$HOME/.kube/config ``` and try again.
+
+
+
+## Create Secrets
+```
+kubectl create secret generic news-secrets --from-literal=apikey="${NEWS_API_KEY}" --from-literal=dbpassword="${DB_PASSWORD}"
+```
+
+
+## Deploy Postgres in AWS
+
+From folder ```k8s/postgres/```.   
+
+Storage Class and Persistent Volume Claim on AWS:
+```
+kubectl apply -f AWS/postgres-pv.yaml 
+```
+
+Then continue:
+```
+kubectl create configmap pg-initdb --from-file ../../db/CreateTables.sql 
+kubectl apply -f postgres-deployment.yaml 
+kubectl apply -f postgres-service.yaml
+```
+
+Access DB to check.   
+```
+POD=`kubectl get pods -l app=news-postgres | grep -v NAME | awk '{print $1}'`
+
+kubectl exec -it $POD -- psql -h localhost -p 5432 -U news_db_user -d news -W
+```
+
+## Deploy ncollector in AWS
+
+Run ```sudo docker login``` first.    
+
+Then, from folder ```ncollector/```.    
+```
+sudo docker build -t mesmerai/ncollector .
+sudo docker push mesmerai/ncollector
+```
+
+Folder ```k8s/ncollector/```.    
+```
+kubectl apply -f ncollector-deployment.yaml 
+kubectl apply -f ncollector-service.yaml
+```
+
+## Deploy visualizer in AWS
+
+
+Folder ```visualizer/```.
+```
+sudo docker build -t mesmerai/visualizer .
+sudo docker push mesmerai/visualizer
+```
+
+Folder ```k8s/visualizer/```:
+```
+kubectl apply -f visualizer-deployment.yaml 
+kubectl apply -f visualizer-service.yaml
+```
+
+Get the External IP from the Service and browse at port ```8080```.   
+
+## Shutdown Everything
+
+Folder ```terraform/gke/```. 
+```
+terraform destroy -auto-approve
+```
+
 
 
 ## Alernative - Start Docker Images Alone
@@ -352,6 +468,7 @@ kubectl config view
 -- delete
 kubectl config delete-cluster <cluster-name>
 kubectl config delete-context <context-name>
+kubectl config delete-user <user-name>
 ```
 
 Troubleshooting
@@ -585,3 +702,40 @@ Create a subdirectory under the mount point.
 
 *Fix*   
 Solved by assigning PGDATA value different than mount point.   
+
+## Terraform
+
+*Error*
+```
+module.vpc.aws_subnet.public[0]: Still destroying... [id=subnet-061fdeb63f640daf2, 19m50s elapsed]
+module.vpc.aws_subnet.public[1]: Still destroying... [id=subnet-098741829eeeca635, 20m0s elapsed]
+module.vpc.aws_subnet.public[0]: Still destroying... [id=subnet-061fdeb63f640daf2, 20m0s elapsed]
+╷
+│ Error: error detaching EC2 Internet Gateway (igw-06ce1e47d880268e8) from VPC (vpc-0f14e1f42cae8f809): DependencyViolation: Network vpc-0f14e1f42cae8f809 has some mapped public address(es). Please unmap those public address(es) before detaching the gateway.
+│ 	status code: 400, request id: d14b1da2-0464-4cd7-929b-49d3a2995499
+│ 
+
+│ Error: error deleting subnet (subnet-098741829eeeca635): timeout while waiting for state to become 'destroyed' (last state: 'pending', timeout: 20m0s)
+│ 
+
+╷
+│ Error: error deleting subnet (subnet-061fdeb63f640daf2): timeout while waiting for state to become 'destroyed' (last state: 'pending', timeout: 20m0s)
+│ 
+```
+
+*Fix*   
+Manually delete the ELB.
+
+Then, error:
+```
+│ Error: Error deleting VPC: DependencyViolation: The vpc 'vpc-0f14e1f42cae8f809' has dependencies and cannot be deleted.
+│ 	status code: 400, request id: ee224235-fd06-410b-b73e-ed16f72c0696
+│ 
+```
+
+Then,
+manually delete the VPC.
+
+
+Need to test, investigate more (eventually test it with T3 instances).
+

@@ -718,6 +718,77 @@ That's the full image generated:
 ![EKS-Graph](images/terraform-eks-visual.png)
 
 
+### Manual Decomposition of Resources
+
+**VPC**
+| Resource             |        Name |           ID    |         CIDR |
+| -------------------- | ----------- |-----------------|--------------|
+| VPC                  | news-vpc    | vpc-09a2bd0d1dc4ece82 |10.0.0.0/16 |
+
+**Subnets**
+|  Name                       | ID                         | CIDR         |
+|-----------------------------| ---------------------------| -------------|
+| news-vpc-public-us-east-2c	| subnet-02bd2f0a90f52e937   | 10.0.6.0/24  |
+| news-vpc-public-us-east-2b  | subnet-008cb6f55f4c125cc   | 10.0.5.0/24  |
+| news-vpc-public-us-east-2a  | subnet-048b553173bfbdcc6   | 10.0.4.0/24  |
+| news-vpc-private-us-east-2c | subnet-056070403aee53551   | 10.0.3.0/24  |
+| news-vpc-private-us-east-2b | subnet-040b24051ff560522	 | 10.0.2.0/24  |
+| news-vpc-private-us-east-2a | subnet-0a3252783e4305093   | 10.0.1.0/24  |
+
+
+**Route Tables**
+
+news-vpc-private  
+news-vpc-public with IGW  
+
+
+**Nat GW** 
+| NAT ID               | EIP          | Subnet 
+|----------------------| -------------| -------------------------
+| nat-02caba4de9c249835|3.129.197.238 | subnet-048b553173bfbdcc6 
+
+
+**Security Groups**  
+| Name                            | ID                   | SG Name                                     | Description                 |  Inbound Rules                             |
+| --------------------------------| ---------------------| --------------------------------------------| ----------------------------| -------------------------------------------|
+| -                               | sg-0e833c56c73edbb78 | default                                     | default VPC security group  | ALL/ALL from sg-0e833c56c73edbb78 / default|
+|news-eks-mKjaiFZ4-eks_cluster_sg | sg-0ce5f9964397d0820 | news-eks-mKjaiFZ42021113000043246570000000c | EKS cluster security group.  | HTTPS/443 from sg-01ac430f93e75ffa0 / news-eks-mKjaiFZ42021113000043247970000000d (Allow pods to communicate with the EKS cluster API.)
+| eks-cluster-sg-news-eks-mKjaiFZ4-1453404038 | sg-0a7c6931e567e3dbf | eks-cluster-sg-news-eks-mKjaiFZ4-1453404038 | EKS created security group applied to ENI that is attached to EKS Control Plane master nodes, as well as any managed workloads. | ALL/ALL from sg-0a7c6931e567e3dbf / eks-cluster-sg-news-eks-mKjaiFZ4-1453404038
+| -                               | sg-069c1576bd9bfc706 | worker_group_mgmt_two20211130000429168500000009 | Managed by Terraform    | SSH/22 From 192.168.0.0/16
+| -                               | sg-097275be39e2f37ca | all_worker_management2021113000043230470000000b | Managed by Terraform    | SSH/22 From 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+| -                               | sg-0fca9593452cb8897 | worker_group_mgmt_one2021113000042916950000000a | Managed by Terraform    | SSH/22 From 10.0.0.0/8
+| news-eks-mKjaiFZ4-eks_worker_sg | sg-01ac430f93e75ffa0 | news-eks-mKjaiFZ42021113000043247970000000d     | Security group for all nodes in the cluster. | 1) ALL/ALL From sg-01ac430f93e75ffa0 / news-eks-mKjaiFZ42021113000043247970000000d (Allow node to communicate with each other.),   2) HTTPS/443 From sg-0ce5f9964397d0820 / news-eks-mKjaiFZ42021113000043246570000000c (Allow pods running extension API servers on port 443 to receive communication from cluster control plane.),   3)TCP/1025 - 65535 From sg-0ce5f9964397d0820 / news-eks-mKjaiFZ42021113000043246570000000c (Allow workers pods to receive communication from the cluster control plane.)
+
+
+**EC2 Instances**
+|Name             | ID | Subnet | SecurityGroups
+|-----------------|----|-------|------------------|
+| news-eks-mKjaiFZ4-worker-group-1-eks_asg | 	i-032304c6cb334f4b2 | us-east-2b | news-eks-mKjaiFZ42021113000043247970000000d,worker_group_mgmt_one2021113000042916950000000a
+| news-eks-mKjaiFZ4-worker-group-2-eks_asg | 	i-0dca456c06e98d246 | us-east-2b | news-eks-mKjaiFZ42021113000043247970000000d,worker_group_mgmt_two20211130000429168500000009
+| news-eks-mKjaiFZ4-worker-group-1-eks_asg | 	i-055ecacc8d3a7e757 | us-east-2c | news-eks-mKjaiFZ42021113000043247970000000d,worker_group_mgmt_one2021113000042916950000000a
+
+**AutoScaling Groups **
+| Name        |   Launch Template/config        | Instances | AZs | Subnets
+| ------------|---------------------------------| -----------|----|----------
+| news-eks-mKjaiFZ4-worker-group-120211130001433340200000017 | news-eks-mKjaiFZ4-worker-group-120211130001425798600000014 | 2 | us-east-2a, us-east-2b, us-east-2c | subnet-056070403aee53551, subnet-040b24051ff560522, subnet-0a3252783e4305093
+| news-eks-mKjaiFZ4-worker-group-220211130001433339700000016 | news-eks-mKjaiFZ4-worker-group-220211130001425805000000015 | 1 | us-east-2a, us-east-2b, us-east-2c | subnet-056070403aee53551, subnet-040b24051ff560522, subnet-0a3252783e4305093
+
+**Launch Configurations**
+| Name | AMI | SecurityGroups | IAM Instance Profile
+|------|-----|---------------|------------------------
+|news-eks-mKjaiFZ4-worker-group-120211130001425798600000014 | ami-0c9f07c8fbe372099 | sg-01ac430f93e75ffa0, sg-0fca9593452cb8897 | news-eks-mKjaiFZ42021113000142198550000000f
+|news-eks-mKjaiFZ4-worker-group-220211130001425805000000015 | ami-0c9f07c8fbe372099 | sg-01ac430f93e75ffa0, sg-069c1576bd9bfc706  | news-eks-mKjaiFZ42021113000142198550000000f
+
+
+An EKS cluster consists of several key components
+
+    1. A control plane that runs the Kubernetes software that powers your cluster. See details and adjust settings for the control plane in the cluster Configuration tab.
+    2. A data plane made up of Amazon EKS worker nodes (EC2 instances) or Fargate compute. Worker nodes run in your account; Fargate compute runs in AWS accounts.
+    All compute (EC2 or Fargate) show up as nodes in the cluster Overview tab. You can manage this compute in the cluster Configuration tab.
+    3. Resources that are defined in the Kubernetes API. There are a number of standard resources that define how your code runs on the cluster. You can see common resources and their status in the cluster Workloads tab.
+    The EKS console allows you to view, but not modify Kubernetes API resources. You can modify your Kubernetes resources using the kubectl CLI.
+
+
 # Troubleshooting 
 
 *Error*          

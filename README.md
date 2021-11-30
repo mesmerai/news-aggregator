@@ -767,7 +767,7 @@ news-vpc-public with IGW
 | news-eks-mKjaiFZ4-worker-group-2-eks_asg | 	i-0dca456c06e98d246 | us-east-2b | news-eks-mKjaiFZ42021113000043247970000000d,worker_group_mgmt_two20211130000429168500000009
 | news-eks-mKjaiFZ4-worker-group-1-eks_asg | 	i-055ecacc8d3a7e757 | us-east-2c | news-eks-mKjaiFZ42021113000043247970000000d,worker_group_mgmt_one2021113000042916950000000a
 
-**AutoScaling Groups **
+**AutoScaling Groups**
 | Name        |   Launch Template/config        | Instances | AZs | Subnets
 | ------------|---------------------------------| -----------|----|----------
 | news-eks-mKjaiFZ4-worker-group-120211130001433340200000017 | news-eks-mKjaiFZ4-worker-group-120211130001425798600000014 | 2 | us-east-2a, us-east-2b, us-east-2c | subnet-056070403aee53551, subnet-040b24051ff560522, subnet-0a3252783e4305093
